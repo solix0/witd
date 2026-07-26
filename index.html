@@ -1800,9 +1800,6 @@ function updateStatsUI() {
     energyEl.textContent = `𐓏 Енергія: ${Math.floor(player.energy)}%`;
     intEl.textContent = `⚑ Вбито: ${stats.INT}`;
     gameTimeEl.textContent = `⏱ Час: ${formatGameTime(gameTime)}`;
-    if (cheatsEnabled) {
-        intEl.textContent += ' ★';
-    }
 }
 
 function updateCooldownUI() {
