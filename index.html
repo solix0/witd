@@ -1,464 +1,2328 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Whisper in the Dark — v0.3</title>
-<style>
-  :root{--hud-bg:rgba(0,0,0,0.45);--hud-fg:#ddd}
-  body{margin:0;background:#000;overflow:hidden;font-family:monospace}
-  canvas{display:block;background:#050505}
-  /* просте модальне вікно інвентарю */
-  #inventoryUI{
-    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
-    width:320px;max-width:90%;padding:14px;border-radius:12px;
-    background:linear-gradient(180deg, rgba(15,15,20,0.95), rgba(10,10,12,0.95));
-    color:var(--hud-fg);box-shadow:0 10px 30px rgba(0,0,0,0.6);display:none;z-index:50;
-  }
-  #inventoryUI h3{margin:0 0 8px 0;text-align:center}
-  #inventoryUI ul{list-style:none;padding:0;margin:0}
-  #inventoryUI li{padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.03);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-  #pickupHint{position:fixed;left:16px;bottom:16px;background:var(--hud-bg);color:var(--hud-fg);padding:8px;border-radius:8px}
-  #stats{position:fixed;right:16px;top:16px;background:var(--hud-bg);color:var(--hud-fg);padding:10px;border-radius:8px;text-align:left}
-  #controls{position:fixed;left:16px;top:16px;background:var(--hud-bg);color:var(--hud-fg);padding:10px;border-radius:8px}
-</style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Whisper in the Dark</title>
+    <style>
+        :root {
+            --hud-bg: rgba(0, 0, 0, 0.85);
+            --hud-fg: #eee;
+            --panel-bg: rgba(8, 8, 12, 0.98);
+            --border-color: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: #fff;
+            user-select: none;
+            cursor: crosshair;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            display: block;
+            background: #000;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: #000005;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .overlay h1 {
+            font-size: 3rem;
+            font-weight: 300;
+            letter-spacing: 8px;
+            text-shadow: 0 0 60px rgba(255, 255, 255, 0.05);
+            margin-bottom: 30px;
+            color: #fff;
+        }
+
+        .overlay h2 {
+            font-weight: 300;
+            letter-spacing: 4px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            color: #fff;
+        }
+
+        .menu-btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 14px 32px;
+            margin: 6px 0;
+            border-radius: 0px;
+            font-size: 1.05rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.08s ease, transform 0.08s ease;
+            width: 240px;
+            text-align: center;
+            letter-spacing: 2px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .menu-btn:hover {
+            background: #d0d0d0;
+            transform: scale(1.02);
+        }
+
+        .menu-btn:active {
+            transform: scale(0.97);
+        }
+
+        .menu-btn.cheat-on {
+            background: #4caf50;
+            color: #fff;
+        }
+
+        .menu-btn.cheat-off {
+            background: #fff;
+            color: #000000;
+        }
+
+        #menuScreen {
+            align-items: flex-start;
+            justify-content: flex-end;
+            padding: 50px 60px;
+            background: #000;
+        }
+
+        #menuScreen h1 {
+            position: absolute;
+            top: 50px;
+            left: 60px;
+            font-size: 2.8rem;
+            font-weight: 300;
+            letter-spacing: 8px;
+            margin: 0;
+            color: #fff;
+        }
+
+        #menuButtonsGroup {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        #homeRightPanel {
+            position: absolute;
+            right: 50px;
+            bottom: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 110;
+        }
+
+        #homeStatsBox {
+            background: var(--panel-bg);
+            border: 2px solid #222;
+            padding: 18px 24px;
+            text-align: center;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.9);
+            min-width: 200px;
+        }
+
+        #homeStatsBox .stat-title {
+            color: #fff;
+            font-weight: 400;
+            font-size: 1.0rem;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #222;
+            padding-bottom: 6px;
+        }
+
+        .stat-line {
+            color: #777;
+            font-size: 0.95rem;
+            padding: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .stat-line span {
+            color: #fff;
+        }
+
+        #signature {
+            margin-top: 10px;
+            color: #777;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        #signature:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        .modal-text-box {
+            max-width: 600px;
+            max-height: 60vh;
+            overflow-y: auto;
+            background: rgba(12, 12, 18, 0.95);
+            border: 1px solid #333;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .modal-text-box h3 {
+            color: #fff;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        #cooldownHud {
+            position: fixed;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            display: none;
+            gap: 30px;
+            background: var(--hud-bg);
+            padding: 10px 24px;
+            border: 2px solid #222;
+            z-index: 50;
+            font-size: 0.9rem;
+        }
+
+        #cooldownHud .cd-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #cooldownHud .cd-item .cd-label {
+            color: #777;
+        }
+
+        #cooldownHud .cd-item .cd-value {
+            color: #fff;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        #cooldownHud .cd-item .cd-value.ready {
+            color: #6fcf97;
+        }
+
+        #cooldownHud .cd-item .cd-value.disabled {
+            color: #ff6b6b;
+        }
+
+        #inventoryUI {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 340px;
+            max-width: 90%;
+            padding: 20px;
+            background: var(--panel-bg);
+            border: 2px solid #333;
+            color: var(--hud-fg);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95);
+            display: none;
+            z-index: 200;
+        }
+
+        #inventoryUI h3 {
+            margin: 0 0 12px 0;
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 3px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            color: #fff;
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .inv-slot {
+            width: 100%;
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.05s ease, border-color 0.05s ease;
+        }
+
+        .inv-slot:hover {
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .inv-slot span.item-name {
+            font-size: 0.65rem;
+            text-align: center;
+            color: #fff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            padding: 2px;
+            pointer-events: none;
+        }
+
+        #containerUI {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 720px;
+            max-width: 95%;
+            padding: 20px;
+            background: var(--panel-bg);
+            border: 2px solid #444;
+            color: var(--hud-fg);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.98);
+            display: none;
+            z-index: 210;
+        }
+
+        .container-dual-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .container-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container-section h4 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: #ffd700;
+        }
+
+        .container-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            width: 100%;
+        }
+
+        #itemContextMenu {
+            position: fixed;
+            background: #101015;
+            border: 1px solid #444;
+            padding: 4px;
+            display: none;
+            z-index: 300;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.9);
+        }
+
+        #itemContextMenu button {
+            display: block;
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 8px 14px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: background 0.05s ease;
+        }
+
+        #itemContextMenu button:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        #closeInv, #closeContainer {
+            background: transparent;
+            border: 2px solid #444;
+            color: #ccc;
+            padding: 8px 24px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.05s ease, border-color 0.05s ease;
+            width: 100%;
+        }
+
+        #closeInv:hover, #closeContainer:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #fff;
+        }
+
+        #pickupHint {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            background: var(--hud-bg);
+            color: var(--hud-fg);
+            padding: 10px 18px;
+            display: none;
+            font-size: 0.9rem;
+            border: 2px solid #222;
+            pointer-events: none;
+        }
+
+        #stats {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: var(--hud-bg);
+            color: var(--hud-fg);
+            padding: 14px 20px;
+            display: none;
+            border: 2px solid #222;
+            min-width: 180px;
+            line-height: 1.6;
+        }
+
+        #stats div { margin: 2px 0; }
+        #stats #hp { color: #ff8a8a; }
+        #stats #energy { color: #f2c94a; }
+        #stats #int { color: #8ab8ff; }
+        #stats #gameTime { color: #777; font-size: 0.85rem; }
+        #stats #message {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #777;
+            border-top: 1px solid #222;
+            padding-top: 6px;
+        }
+
+        #controls {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            background: var(--hud-bg);
+            color: var(--hud-fg);
+            padding: 12px 16px;
+            display: none;
+            border: 2px solid #222;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            max-width: 230px;
+        }
+
+        #controls div { padding: 2px 0; }
+    </style>
 </head>
 <body>
-<canvas id="game"></canvas>
 
-<!-- Інвентар -->
-<div id="inventoryUI" role="dialog" aria-hidden="true">
-  <h3>Інвентар (I)</h3>
-  <ul id="inventoryList"></ul>
-  <div style="text-align:center;margin-top:10px">
-    <button id="closeInv">Закрити</button>
-  </div>
-</div>
+    <div id="menuScreen" class="overlay">
+        <h1>Whisper<br>in the Dark</h1>
 
-<div id="pickupHint">Підійди до предмета і включи фонарик, щоб підібрати</div>
-<div id="controls">
-  <div>WASD / ←↑→↓ — рух</div>
-  <div>F — фонарик</div>
-  <div>Space — крик (лякати примар)</div>
-  <div>L — зажигалка (2 с)</div>
-  <div>I — інвентар</div>
-</div>
-<div id="stats">
-  <div id="hp">HP: 100 / 100</div>
-  <div id="int">INT: 0</div>
-  <div id="message" style="margin-top:6px;font-size:13px;color:#bdbdbd"></div>
-</div>
+        <div id="menuButtonsGroup">
+            <button class="menu-btn" id="playBtn">ГРАТИ</button>
+            <button class="menu-btn" id="settingsBtn">НАЛАШТУВАННЯ</button>
+        </div>
 
-<script>
-/* ================= SETUP ================= */
+        <div id="homeRightPanel">
+            <div id="homeStatsBox">
+                <div class="stat-title">СТАТИСТИКА</div>
+                <div class="stat-line">
+                    <span>Макс. за матч</span>
+                    <span id="recBestMatch">0</span>
+                </div>
+                <div class="stat-line">
+                    <span>Червоних</span>
+                    <span id="recRed" style="color:#ff7777;">0</span>
+                </div>
+                <div class="stat-line">
+                    <span>Синіх</span>
+                    <span id="recBlue" style="color:#77aaff;">0</span>
+                </div>
+                <div class="stat-line">
+                    <span>Час</span>
+                    <span id="recTime" style="color:#777;">0 сек</span>
+                </div>
+            </div>
+            <div id="signature">signed by solix©</div>
+        </div>
+    </div>
+
+    <div id="settingsUI" class="overlay hidden">
+        <h2>НАЛАШТУВАННЯ</h2>
+        <div style="margin: 20px 0; text-align:center; width:100%; max-width:300px;">
+            <label style="display:block; margin-bottom:10px; color:#777; letter-spacing:1px;">Гучність фону</label>
+            <input type="range" id="volRange" min="0" max="1" step="0.1" value="0.25" style="width:100%; background:#111; height:4px; -webkit-appearance:none;">
+        </div>
+        <div style="margin: 0px 0; text-align:center;">
+            <button class="menu-btn" id="cheatBtn">ЧИТИ: ВИМКНЕНО</button>
+        </div>
+        <button class="menu-btn" id="rulesBtn">ПРАВИЛА ГРИ</button>
+        <button class="menu-btn" id="backBtn">НАЗАД</button>
+    </div>
+
+    <!-- Модальне вікно: Правила гри -->
+    <div id="rulesUI" class="overlay hidden">
+        <h2>ПРАВИЛА ГРИ</h2>
+        <div class="modal-text-box">
+            <h3>Мета гри</h3>
+            Виживайте у темряві, остерігайтеся червоних та синіх привидів, збирайте ресурси та намагайтеся встановити рекорд за часом і вбивствами.
+
+            <h3>Керування</h3>
+            • <b>WASD / Стрілки</b> — Рух персонажа.<br>
+            • <b>F</b> — Увімкнути / вимкнути ліхтарик.<br>
+            • <b>ЛКМ</b> — Запальничка (працює при ВИМКНЕНОМУ ліхтарику, витрачає 5% енергії). Відлякує синіх монстрів.<br>
+            • <b>ПКМ</b> — Крик (працює при УВІМКНЕНОМУ ліхтарику, витрачає 10% енергії). Лякає та знищує червоних привидів.<br>
+            • <b>E</b> — Взаємодія (увійти/вийти з дому, відкрити сундук, підібрати предмети або телепортуватися).<br>
+            • <b>P</b> — Встановити точку телепортації (максимум 2 точки).<br>
+            • <b>I</b> — Відкрити рюкзак.<br>
+            • <b>ESC</b> — Пауза.
+
+            <h3>Предмети та виживання</h3>
+            • На карті розкидані предмети для відновлення HP (бінти, аптечки) та енергії (яблука, вода, бутерброди, м'ясо).<br>
+            • Вдома у вас є безпечна зона та сундук на 30 слотів для зберігання речей.<br>
+            • У домі вороги не атакують, але й використання здібностей (крик/запальничка) там заблоковане.
+        </div>
+        <button class="menu-btn" id="closeRulesBtn">ЗАКРИТИ</button>
+    </div>
+
+    <!-- Модальне вікно: EULA -->
+    <div id="eulaUI" class="overlay hidden">
+        <h2>Ліцензійна угода (EULA)</h2>
+        <div class="modal-text-box">
+            <b>Власник і розробник:</b> solix<br><br>
+            Ця онлайн гра ліцензована виключно для особистого використання.<br><br>
+            Забороняється продавати, поширювати, заявляти про право власності або використовувати цю онлайн гру з комерційною метою чи для надання платних послуг.<br><br>
+            Ця онлайн гра надається на умовах «як є», без жодних гарантій.<br><br>
+            Усі авторські права та права інтелектуальної власності належать solix.<br><br>
+            <b>Версія гри:</b> v4.17
+        </div>
+        <button class="menu-btn" id="closeEulaBtn">ЗАКРИТИ</button>
+    </div>
+
+    <div id="pauseUI" class="overlay hidden">
+        <h1>ПАУЗА</h1>
+        <button class="menu-btn" id="resumeBtn">ПРОДОВЖИТИ</button>
+        <button class="menu-btn" id="pauseSettingsBtn">НАЛАШТУВАННЯ</button>
+        <button class="menu-btn" id="saveExitBtn">ЗБЕРЕГТИ ТА ВИЙТИ</button>
+    </div>
+
+    <div id="gameOverScreen" class="overlay hidden">
+        <h1 id="deathReason" style="color:#ff6666; font-size:1.8rem;">ТИ ЗАГИНУВ</h1>
+        <button class="menu-btn" id="respawnBtn">ПЕРЕРОДИТИСЬ</button>
+        <button class="menu-btn" id="toMenuBtn">ГОЛОВНЕ МЕНЮ</button>
+    </div>
+
+    <canvas id="game"></canvas>
+
+    <div id="cooldownHud">
+        <div class="cd-item">
+            <span class="cd-label">КРИК</span>
+            <span class="cd-value" id="screamCd">✔</span>
+        </div>
+        <div class="cd-item">
+            <span class="cd-label">ЗАПАЛЬНИЧКА</span>
+            <span class="cd-value" id="lighterCd">✔</span>
+        </div>
+    </div>
+
+    <div id="inventoryUI" role="dialog" aria-hidden="true">
+        <h3>РЮКЗАК (I)</h3>
+        <div class="inventory-grid" id="inventoryGrid"></div>
+        <div>
+            <button id="closeInv">ЗАКРИТИ</button>
+        </div>
+    </div>
+
+    <div id="containerUI" role="dialog" aria-hidden="true">
+        <div class="container-dual-grid">
+            <div class="container-section">
+                <h4>СУНДУК (30 слотів)</h4>
+                <div class="container-grid" id="chestGrid"></div>
+            </div>
+            <div class="container-section">
+                <h4>РЮКЗАК (20 слотів)</h4>
+                <div class="container-grid" id="backpackGrid"></div>
+            </div>
+        </div>
+        <div>
+            <button id="closeContainer">ЗАКРИТИ</button>
+        </div>
+    </div>
+
+    <div id="itemContextMenu">
+        <button id="ctxUseBtn">Використати</button>
+        <button id="ctxMoveBtn">Перемістити</button>
+        <button id="ctxDropBtn">Викинути</button>
+    </div>
+
+    <div id="pickupHint">Натисніть E, щоб увійти / вийти / відкрити сундук</div>
+    <div id="controls">
+        <div>WASD / ←↑→↓ — рух</div>
+        <div>F — ліхтарик</div>
+        <div>ПКМ — крик (-10% енергії)</div>
+        <div>ЛКМ — запальничка (-5% енергії)</div>
+        <div>E — взаємодія</div>
+        <div>P — встановити точку TP</div>
+        <div>I — рюкзак</div>
+        <div>ESC — пауза</div>
+    </div>
+    <div id="stats">
+        <div id="hp">❤︎ Життя: 100 / 100</div>
+        <div id="energy">𐓏 Енергія: 100%</div>
+        <div id="int">⚑ Вбито: 0</div>
+        <div id="gameTime">⏱ Час: 0 сек</div>
+        <div id="message"></div>
+    </div>
+
+    <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-canvas.width = innerWidth; canvas.height = innerHeight;
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
-window.addEventListener('resize', ()=>{canvas.width = innerWidth; canvas.height = innerHeight});
+window.addEventListener('resize', () => {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+});
 
-/* ================= SOUNDS (free assets links) ================= */
-const sToggle = new Audio("https://cdn.pixabay.com/audio/2022/03/10/audio_59302b1d9d.mp3");
-const sAmbient = new Audio("https://cdn.pixabay.com/download/audio/2022/03/23/audio_3d3829bb0a.mp3?filename=dark-ambient-144989.mp3");
-const sGhostSpawn = new Audio("https://cdn.pixabay.com/audio/2022/02/14/audio_0b64c2b799.mp3");
-const sScream = new Audio("https://cdn.pixabay.com/audio/2021/09/09/audio_c30a74f2b7.mp3");
-const sDeath = new Audio("https://cdn.pixabay.com/audio/2022/03/29/audio_ba01e034f4.mp3");
-const sLighter = new Audio("https://cdn.pixabay.com/download/audio/2022/03/13/audio_0f0ca1a2f2.mp3?filename=lighter-1-6292.mp3");
-sAmbient.loop = true; sAmbient.volume = 0.25; sAmbient.play().catch(()=>{/* autoplay may block; ignore */});
+window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+});
 
-/* ================= GAME STATE ================= */
+function formatGameTime(totalSeconds) {
+    if (totalSeconds < 60) {
+        return `${totalSeconds} сек`;
+    } else if (totalSeconds < 3600) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return seconds > 0 ? `${minutes} хв ${seconds} сек` : `${minutes} хв`;
+    } else {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        return minutes > 0 ? `${hours} год ${minutes} хв` : `${hours} год`;
+    }
+}
+
+let audioCtx = null;
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
+function createBeep(freq, duration, type = 'sine', volume = 0.3) {
+    try {
+        const ctx = initAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.value = volume;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function playToggle() { createBeep(800, 0.1, 'square', 0.15); }
+function playScream() {
+    createBeep(200, 0.3, 'sawtooth', 0.2);
+    setTimeout(() => createBeep(150, 0.4, 'sawtooth', 0.15), 150);
+}
+function playDeath() {
+    createBeep(400, 0.2, 'sawtooth', 0.2);
+    setTimeout(() => createBeep(300, 0.2, 'sawtooth', 0.2), 200);
+    setTimeout(() => createBeep(200, 0.3, 'sawtooth', 0.2), 400);
+}
+function playLighter() {
+    createBeep(600, 0.15, 'sine', 0.1);
+    setTimeout(() => createBeep(800, 0.1, 'sine', 0.08), 100);
+}
+
+let ambientNode = null;
+let ambientGain = null;
+let isAmbientPlaying = false;
+
+function startAmbient() {
+    if (isAmbientPlaying) return;
+    try {
+        const ctx = initAudio();
+        const bufferSize = 2 * ctx.sampleRate;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.1;
+        }
+        ambientNode = ctx.createBufferSource();
+        ambientNode.buffer = buffer;
+        ambientNode.loop = true;
+        ambientGain = ctx.createGain();
+        ambientGain.gain.value = 0.08;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 300;
+        ambientNode.connect(filter);
+        filter.connect(ambientGain);
+        ambientGain.connect(ctx.destination);
+        ambientNode.start();
+        isAmbientPlaying = true;
+    } catch (e) {}
+}
+
+function stopAmbient() {
+    if (ambientNode && isAmbientPlaying) {
+        try {
+            ambientNode.stop();
+            ambientNode.disconnect();
+            isAmbientPlaying = false;
+        } catch (e) {}
+    }
+}
+
+function setAmbientVolume(val) {
+    if (ambientGain) ambientGain.gain.value = val * 0.08;
+}
+
+let gameState = 'menu';
+let previousState = 'menu';
+let cheatsEnabled = false;
+
 const player = {
-  x: canvas.width/2, y: canvas.height/2, size:20, speed:3,
-  hp:100, maxHp:100
+    x: 0,
+    y: 0,
+    size: 24,
+    speed: 4,
+    hp: 100,
+    maxHp: 100,
+    energy: 100,
+    maxEnergy: 100,
+    insideHouse: false
 };
-let stats = { INT: 0 };
+
+const house = {
+    x: 200,
+    y: -180,
+    size: 360,
+    color: '#8b5a2b'
+};
+
+const door = {
+    x: house.x + house.size / 2 - 25,
+    y: house.y - 6,
+    width: 50,
+    height: 12,
+    color: '#7f8c8d'
+};
+
+const chest = {
+    x: house.x + 60,
+    y: house.y + 60,
+    size: 30,
+    color: '#ffd700'
+};
+
+let tpPoints = [];
+let mouseX = 0;
+let mouseY = 0;
+
+const stats = {
+    INT: 0,
+    redKills: 0,
+    blueKills: 0,
+    bestMatchKills: 0,
+    bestRedKills: 0,
+    bestBlueKills: 0,
+    bestTime: 0
+};
+
+let gameTime = 0;
+let gameTimeInterval = null;
+let isGameActive = false;
+
+const COOLDOWN = { scream: 5, lighter: 5 };
+let screamCooldown = 0;
+let lighterCooldown = 0;
+let lastTimestamp = 0;
+
+let screamEffect = null;
+let lighterEffect = null;
+
+const recBestMatchEl = document.getElementById('recBestMatch');
+const recRedEl = document.getElementById('recRed');
+const recBlueEl = document.getElementById('recBlue');
+const recTimeEl = document.getElementById('recTime');
+const screamCdEl = document.getElementById('screamCd');
+const lighterCdEl = document.getElementById('lighterCd');
+const cheatBtn = document.getElementById('cheatBtn');
+const gameTimeEl = document.getElementById('gameTime');
+
+function loadRecords() {
+    stats.bestRedKills = parseInt(localStorage.getItem('whisper_best_red') || '0', 10);
+    stats.bestBlueKills = parseInt(localStorage.getItem('whisper_best_blue') || '0', 10);
+    stats.bestMatchKills = parseInt(localStorage.getItem('whisper_best_match') || '0', 10);
+    stats.bestTime = parseInt(localStorage.getItem('whisper_best_time') || '0', 10);
+    updateHomeUI();
+}
+
+function saveRecords() {
+    if (cheatsEnabled) return;
+    localStorage.setItem('whisper_best_red', stats.bestRedKills);
+    localStorage.setItem('whisper_best_blue', stats.bestBlueKills);
+    localStorage.setItem('whisper_best_match', stats.bestMatchKills);
+    localStorage.setItem('whisper_best_time', stats.bestTime);
+    updateHomeUI();
+}
+
+function updateHomeUI() {
+    recBestMatchEl.textContent = stats.bestMatchKills;
+    recRedEl.textContent = stats.bestRedKills;
+    recBlueEl.textContent = stats.bestBlueKills;
+    recTimeEl.textContent = formatGameTime(stats.bestTime);
+}
+
+loadRecords();
 
 let keys = {};
-let flashlightOn = true;
+function clearKeys() { keys = {}; }
+
+let flashlightOn = false;
 let lighterActive = false;
 let lighterTimer = 0;
 
-let inventory = []; // array of item objects {id, name, type, value}
+let inventory = [];
+const MAX_INVENTORY_SIZE = 20;
 
-const itemsOnMap = []; // drops to pick up {x,y,type,name,value}
+let chestInventory = [];
+const MAX_CHEST_SIZE = 30;
 
-const enemies = []; // each enemy: {x,y,size,type,state,visible,spawnedAt}
+let itemsOnMap = [];
+let enemies = [];
+let lastSpawn = Date.now();
+let lastItemSpawn = Date.now();
 
-/* ================= UI refs ================= */
+const menuScreen = document.getElementById('menuScreen');
+const settingsUI = document.getElementById('settingsUI');
+const rulesUI = document.getElementById('rulesUI');
+const eulaUI = document.getElementById('eulaUI');
+const pauseUI = document.getElementById('pauseUI');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const deathReasonEl = document.getElementById('deathReason');
+const cooldownHud = document.getElementById('cooldownHud');
+
+const playBtn = document.getElementById('playBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const rulesBtn = document.getElementById('rulesBtn');
+const closeRulesBtn = document.getElementById('closeRulesBtn');
+const signatureEl = document.getElementById('signature');
+const closeEulaBtn = document.getElementById('closeEulaBtn');
+const backBtn = document.getElementById('backBtn');
+const resumeBtn = document.getElementById('resumeBtn');
+const pauseSettingsBtn = document.getElementById('pauseSettingsBtn');
+const saveExitBtn = document.getElementById('saveExitBtn');
+const respawnBtn = document.getElementById('respawnBtn');
+const toMenuBtn = document.getElementById('toMenuBtn');
+const volRange = document.getElementById('volRange');
+
 const invUI = document.getElementById('inventoryUI');
-const invList = document.getElementById('inventoryList');
+const inventoryGrid = document.getElementById('inventoryGrid');
 const closeInvBtn = document.getElementById('closeInv');
+
+const containerUI = document.getElementById('containerUI');
+const chestGrid = document.getElementById('chestGrid');
+const backpackGrid = document.getElementById('backpackGrid');
+const closeContainerBtn = document.getElementById('closeContainer');
+
+const itemContextMenu = document.getElementById('itemContextMenu');
+const ctxUseBtn = document.getElementById('ctxUseBtn');
+const ctxMoveBtn = document.getElementById('ctxMoveBtn');
+const ctxDropBtn = document.getElementById('ctxDropBtn');
+
+let selectedItemIndex = null;
+let selectedItemSource = null;
+
 const pickupHint = document.getElementById('pickupHint');
+const statsEl = document.getElementById('stats');
+const controlsEl = document.getElementById('controls');
 const hpEl = document.getElementById('hp');
+const energyEl = document.getElementById('energy');
 const intEl = document.getElementById('int');
 const msgEl = document.getElementById('message');
 
-/* ================= HELPERS ================= */
-function rnd(min,max){return Math.random()*(max-min)+min;}
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function rnd(min, max) { return Math.random() * (max - min) + min; }
 
-/* ================= INPUT ================= */
-window.addEventListener('keydown', e=>{
-  keys[e.key] = true;
-  // toggles
-  if(e.key.toLowerCase()==='f'){ flashlightOn = !flashlightOn; sToggle.currentTime=0; sToggle.play(); }
-  if(e.code === 'Space'){ scream(); }
-  if(e.key.toLowerCase()==='l'){ useLighter(); }
-  if(e.key.toLowerCase()==='i'){ toggleInventory(); }
-});
-window.addEventListener('keyup', e=>{ keys[e.key]=false; });
-
-closeInvBtn.addEventListener('click', ()=> toggleInventory(false));
-
-/* ================= INVENTORY UI ================= */
-function toggleInventory(forceState){
-  const show = typeof forceState === 'boolean' ? forceState : (invUI.style.display === 'none' || invUI.style.display === '');
-  invUI.style.display = show ? 'block' : 'none';
-  invUI.setAttribute('aria-hidden', show ? 'false' : 'true');
-  refreshInventory();
-}
-function refreshInventory(){
-  invList.innerHTML = '';
-  if(inventory.length === 0){
-    invList.innerHTML = '<li style="justify-content:center">Порожньо</li>';
-    return;
-  }
-  inventory.forEach((it, idx)=>{
-    const li = document.createElement('li');
-    li.innerHTML = `<span>${it.name}</span><span>${it.desc || ''}</span>`;
-    // add use button for consumables
-    if(it.type === 'food' || it.type==='bandage'){
-      const btn = document.createElement('button'); btn.textContent='Використати';
-      btn.onclick = ()=>{ useItem(idx); };
-      li.appendChild(btn);
-    }
-    invList.appendChild(li);
-  });
-}
-function useItem(index){
-  const it = inventory[index];
-  if(!it) return;
-  if(it.type === 'food'){ player.hp = player.maxHp; msg("Їжа використана: HP повністю відновлено"); }
-  if(it.type === 'bandage'){ player.hp = Math.min(player.maxHp, player.hp + Math.floor(player.maxHp*0.2)); msg("Бінт: +20% HP"); }
-  inventory.splice(index,1);
-  refreshInventory();
-  updateStatsUI();
+function isInsideHouse(x, y) {
+    return x >= house.x && x <= house.x + house.size && y >= house.y && y <= house.y + house.size;
 }
 
-/* ================= MESSAGES ================= */
+function collidesWithHouse(x, y, radius) {
+    const hLeft = house.x;
+    const hRight = house.x + house.size;
+    const hTop = house.y;
+    const hBottom = house.y + house.size;
+
+    return (
+        x + radius > hLeft &&
+        x - radius < hRight &&
+        y + radius > hTop &&
+        y - radius < hBottom
+    );
+}
+
 let msgTimeout;
-function msg(t){
-  msgEl.textContent = t;
-  clearTimeout(msgTimeout);
-  msgTimeout = setTimeout(()=>{ if(msgEl) msgEl.textContent = ''; }, 3000);
+function msg(t) {
+    msgEl.textContent = t;
+    clearTimeout(msgTimeout);
+    msgTimeout = setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3000);
 }
 
-/* ================= ENEMY LOGIC ================= */
-/* types:
-   - 'ghost' : уникає світла; рухається до гравця коли фонарик вимкнено; налякується криком (Space)
-   - 'fiend' : чутливий до вогню (зажигалки); рухається до гравця завжди; тільки lighter вбиває/відлякує
-*/
-function spawnEnemy(type){
-  const e = {
-    x: rnd(50, canvas.width-50),
-    y: rnd(50, canvas.height-50),
-    size: type==='ghost'?30:28,
-    type:type,
-    visible:true,
-    state:'idle', // 'idle','chasing','scared','dead'
-    spawnedAt: Date.now(),
-    soundPlayed:false
-  };
-  enemies.push(e);
-  if(type==='ghost'){ sGhostSpawn.currentTime=0; sGhostSpawn.volume=0.5; sGhostSpawn.play().catch(()=>{}); }
+function saveGame() {
+    const saveData = {
+        player: { x: player.x, y: player.y, hp: player.hp, maxHp: player.maxHp, energy: player.energy, maxEnergy: player.maxEnergy, insideHouse: player.insideHouse },
+        stats: { INT: stats.INT, redKills: stats.redKills, blueKills: stats.blueKills },
+        gameTime: gameTime,
+        flashlightOn: flashlightOn,
+        inventory: inventory,
+        chestInventory: chestInventory,
+        tpPoints: tpPoints,
+        itemsOnMap: itemsOnMap,
+        enemies: enemies.map(en => ({ x: en.x, y: en.y, size: en.size, type: en.type, state: en.state, wanderAngle: en.wanderAngle, wanderTimer: en.wanderTimer }))
+    };
+    localStorage.setItem('whisper_save', JSON.stringify(saveData));
+    msg('Гру збережено!');
 }
 
-/* spawn loop */
-let lastSpawn = Date.now();
-function spawnLoop(){
-  if(Date.now() - lastSpawn > 5000){
-    // randomly spawn ghost or fiend
-    spawnEnemy(Math.random() < 0.6 ? 'ghost' : 'fiend');
-    lastSpawn = Date.now();
-  }
+function loadGame() {
+    const saveData = JSON.parse(localStorage.getItem('whisper_save'));
+    if (!saveData) return false;
+
+    player.x = saveData.player.x;
+    player.y = saveData.player.y;
+    player.hp = saveData.player.hp;
+    player.maxHp = saveData.player.maxHp;
+    player.energy = saveData.player.energy !== undefined ? saveData.player.energy : 100;
+    player.maxEnergy = saveData.player.maxEnergy !== undefined ? saveData.player.maxEnergy : 100;
+    player.insideHouse = saveData.player.insideHouse || false;
+
+    stats.INT = saveData.stats.INT;
+    stats.redKills = saveData.stats.redKills;
+    stats.blueKills = saveData.stats.blueKills;
+
+    gameTime = saveData.gameTime || 0;
+    flashlightOn = saveData.flashlightOn || false;
+    inventory = saveData.inventory || [];
+    chestInventory = saveData.chestInventory || [];
+    tpPoints = saveData.tpPoints || [];
+    itemsOnMap = saveData.itemsOnMap || [];
+    enemies = saveData.enemies.map(en => ({
+        x: en.x, y: en.y, size: en.size, type: en.type, state: en.state,
+        wanderAngle: en.wanderAngle || 0, wanderTimer: en.wanderTimer || 0
+    }));
+    return true;
 }
 
-/* update enemies */
-function updateEnemies(){
-  for(let i=enemies.length-1;i>=0;i--){
-    const en = enemies[i];
-    if(en.state === 'dead') continue;
+function deleteSave() { localStorage.removeItem('whisper_save'); }
+function hasSave() { return localStorage.getItem('whisper_save') !== null; }
 
-    // play initial sound once
-    if(!en.soundPlayed){
-      en.soundPlayed = true;
-      // small variation on how loud
+function spawnEnemy() {
+    let ex, ey, type;
+    let attempts = 0;
+    const size = 30;
+    do {
+        const angle = rnd(0, Math.PI * 2);
+        const dist = rnd(450, 950);
+        type = Math.random() < 0.5 ? 'red' : 'blue';
+        ex = player.x + Math.cos(angle) * dist;
+        ey = player.y + Math.sin(angle) * dist;
+        attempts++;
+    } while (collidesWithHouse(ex, ey, size / 2) && attempts < 30);
+
+    if (collidesWithHouse(ex, ey, size / 2)) {
+        ex = house.x + house.size + 150;
+        ey = house.y + house.size + 150;
     }
 
-    // behavior
-    const dx = player.x - en.x;
-    const dy = player.y - en.y;
-    const d = Math.hypot(dx,dy);
+    enemies.push({
+        x: ex,
+        y: ey,
+        size: type === 'red' ? 30 : 28,
+        type: type,
+        state: 'idle',
+        wanderAngle: rnd(0, Math.PI * 2),
+        wanderTimer: 0,
+        trail: []
+    });
+}
 
-    if(en.type === 'ghost'){
-      // ghost chases only in dark
-      if(!flashlightOn && en.state !== 'scared'){
-        en.state = 'chasing';
-        if(d>1){
-          en.x += (dx/d) * 0.6;
-          en.y += (dy/d) * 0.6;
+function spawnLoop() {
+    if (Date.now() - lastSpawn > 5000 && enemies.length < 15) {
+        spawnEnemy();
+        lastSpawn = Date.now();
+    }
+
+    if (Date.now() - lastItemSpawn > 4000 && itemsOnMap.length < 40) {
+        const angle = rnd(0, Math.PI * 2);
+        const dist = rnd(600, 1200);
+        spawnItemAt(player.x + Math.cos(angle) * dist, player.y + Math.sin(angle) * dist);
+        lastItemSpawn = Date.now();
+    }
+}
+
+function spawnItemAt(x, y) {
+    let ix = x, iy = y;
+    let attempts = 0;
+    while (isInsideHouse(ix, iy) && attempts < 20) {
+        const angle = rnd(0, Math.PI * 2);
+        const dist = rnd(600, 1200);
+        ix = player.x + Math.cos(angle) * dist;
+        iy = player.y + Math.sin(angle) * dist;
+        attempts++;
+    }
+    if (isInsideHouse(ix, iy)) {
+        ix += house.size + 100;
+    }
+
+    const rand = Math.random();
+    let type = 'apple', name = 'Яблуко', desc = '+10% Енергії', regenType = 'energy', regenVal = 10;
+
+    if (rand < 0.25) { type = 'apple'; name = 'Яблуко'; desc = '+10% Енергії'; regenType = 'energy'; regenVal = 10; }
+    else if (rand < 0.50) { type = 'water'; name = 'Вода'; desc = '+5% Енергії'; regenType = 'energy'; regenVal = 5; }
+    else if (rand < 0.70) { type = 'sandwich'; name = 'Бутерброд'; desc = '+15% Енергії'; regenType = 'energy'; regenVal = 15; }
+    else if (rand < 0.85) { type = 'meat'; name = 'М\'ясо'; desc = '+20% Енергії'; regenType = 'energy'; regenVal = 20; }
+    else if (rand < 0.95) { type = 'bandage'; name = 'Бінт'; desc = '+20 HP'; regenType = 'hp'; regenVal = 20; }
+    else { type = 'medkit'; name = 'Аптечка'; desc = '+50 HP'; regenType = 'hp'; regenVal = 50; }
+
+    itemsOnMap.push({ x: ix, y: iy, type: type, name: name, desc: desc, regenType: regenType, regenVal: regenVal });
+}
+
+function scream(mx, my) {
+    if (player.insideHouse) {
+        msg("✖ Атака в домі заблокована!");
+        return;
+    }
+    if (!flashlightOn) {
+        msg("✖ Крик доступний тільки коли ліхтарик увімкнено!");
+        return;
+    }
+    if (screamCooldown > 0) {
+        msg(`Крик перезаряджається (${Math.ceil(screamCooldown)}с)`);
+        return;
+    }
+    if (player.energy < 10) {
+        msg("✖ Недостатньо енергії для крику (потрібно 10%)!");
+        player.energy = 0;
+        updateStatsUI();
+        return;
+    }
+
+    player.energy -= 10;
+    updateStatsUI();
+
+    const worldX = mx - canvas.width / 2 + player.x;
+    const worldY = my - canvas.height / 2 + player.y;
+
+    playScream();
+    screamCooldown = COOLDOWN.scream;
+
+    screamEffect = { x: worldX, y: worldY, radius: 20, maxRadius: 350, alpha: 0.8 };
+
+    let scaredAny = false;
+    enemies.forEach(en => {
+        const d = Math.hypot(worldX - en.x, worldY - en.y);
+        if (en.type === 'red' && d < 280 && en.state !== 'scared') {
+            en.state = 'scared';
+            scaredAny = true;
         }
-      } else {
-        if(en.state !== 'scared') en.state = 'idle';
-        // slight drifting when idle
-        en.x += Math.sin((Date.now()+en.x)/1000)*0.2;
-        en.y += Math.cos((Date.now()+en.y)/1200)*0.2;
-      }
-      // if scared -> fly up and vanish
-      if(en.state === 'scared'){
-        en.y -= 2.5;
-        if(en.y + en.size < -10){ en.state='dead'; handleEnemyDeath(en); }
-      }
-      // collision -> death
-      if(d < (player.size + en.size)/2 && en.state !== 'scared'){
-        // if ghost touches player in dark => death
-        if(!flashlightOn){
-          die("👻 Примара схопила тебе у темряві...");
-        } else {
-          // if player in light, avoid immediate death (ghost shouldn't touch while light on)
-        }
-      }
-    }
-
-    if(en.type === 'fiend'){
-      // always chases slowly
-      if(en.state !== 'scared'){
-        en.state = 'chasing';
-        if(d>1){
-          en.x += (dx/d) * 0.8;
-          en.y += (dy/d) * 0.8;
-        }
-      }
-      // if scared (lighter used) -> vanish
-      if(en.state === 'scared'){
-        en.y -= 2;
-        if(en.y + en.size < -10){ en.state='dead'; handleEnemyDeath(en); }
-      }
-      // collision -> reduce HP a bit even in light
-      if(d < (player.size + en.size)/2 && en.state !== 'scared'){
-        // fiend damages player gradually
-        player.hp -= 0.2; // slow HP drain when touching
-        if(player.hp <= 0) die("☠️ Ти виснажився від поразок...");
-      }
-    }
-  }
-  // cleanup dead enemies from array
-  for(let j=enemies.length-1;j>=0;j--){
-    if(enemies[j].state === 'dead') enemies.splice(j,1);
-  }
+    });
+    if (scaredAny) msg("Крик налякав червоних! (-10% енергії)");
+    else msg("Крик не знайшов червоних поруч... (-10% енергії)");
 }
 
-/* when enemy dies */
-function handleEnemyDeath(en){
-  sDeath.currentTime = 0; sDeath.play().catch(()=>{});
-  if(en.type === 'ghost'){
-    // chance to drop item (food or bandage or nothing)
-    const r = Math.random();
-    if(r < 0.4){
-      itemsOnMap.push({x: en.x, y:en.y, type:'food', name:'Їжа', desc:'Відновлює HP до 100%'});
-    } else if (r < 0.75){
-      itemsOnMap.push({x: en.x, y:en.y, type:'bandage', name:'Бінт', desc:'+20% HP'});
-    } else {
-      // nothing
+function useLighter(mx, my) {
+    if (player.insideHouse) {
+        msg("✖ Атака в домі заблокована!");
+        return;
     }
-    msg("Примара зникла... можливо залишила щось.");
-  } else if(en.type === 'fiend'){
-    // fiend gives INT bonus instead of drop
+    if (flashlightOn) {
+        msg("✖ Запальничка доступна тільки коли ліхтарик вимкнено!");
+        return;
+    }
+    if (lighterCooldown > 0) {
+        msg(`Запальничка перезаряджається (${Math.ceil(lighterCooldown)}с)`);
+        return;
+    }
+    if (player.energy < 5) {
+        msg("✖ Недостатньо енергії для удару!");
+        player.energy = 0;
+        updateStatsUI();
+        return;
+    }
+
+    player.energy -= 5;
+    updateStatsUI();
+
+    if (lighterActive) return;
+
+    const worldX = mx - canvas.width / 2 + player.x;
+    const worldY = my - canvas.height / 2 + player.y;
+
+    lighterActive = true;
+    lighterTimer = Date.now();
+    lighterCooldown = COOLDOWN.lighter;
+    playLighter();
+
+    const angle = Math.atan2(worldY - player.y, worldX - player.x);
+    lighterEffect = { x: player.x, y: player.y, angle: angle, length: 200, alpha: 1 };
+
+    let affected = false;
+    enemies.forEach(en => {
+        const d = Math.hypot(worldX - en.x, worldY - en.y);
+        if (en.type === 'blue' && d < 220 && en.state !== 'scared') {
+            en.state = 'scared';
+            affected = true;
+        }
+    });
+    if (affected) msg("Запальничка відлякала синіх!");
+    else msg("Запальничка: нікого поруч.");
+}
+
+function handleEnemyDeath(en) {
+    playDeath();
     stats.INT += 1;
-    msg("Ворог поляг: +1 INT");
-  }
-  // mark as dead — actual removal handled elsewhere
-}
 
-/* ================= PLAYER ACTIONS ================= */
-function scream(){
-  // affects ghosts within radius
-  sScream.currentTime = 0; sScream.volume = 0.6; sScream.play().catch(()=>{});
-  let scaredAny = false;
-  enemies.forEach(en=>{
-    const d = Math.hypot(player.x - en.x, player.y - en.y);
-    if(en.type === 'ghost' && d < 220 && en.state !== 'scared'){
-      en.state = 'scared';
-      scaredAny = true;
+    if (en.type === 'red') stats.redKills++;
+    if (en.type === 'blue') stats.blueKills++;
+
+    if (!cheatsEnabled) {
+        const currentTotal = stats.redKills + stats.blueKills;
+        if (currentTotal > stats.bestMatchKills) stats.bestMatchKills = currentTotal;
+        if (stats.redKills > stats.bestRedKills) stats.bestRedKills = stats.redKills;
+        if (stats.blueKills > stats.bestBlueKills) stats.bestBlueKills = stats.blueKills;
+        if (gameTime > stats.bestTime) stats.bestTime = gameTime;
     }
-  });
-  if(scaredAny) msg("Крик налякав примару!");
-  else msg("Крик не знайшов примар поруч...");
+
+    saveRecords();
+    updateHomeUI();
 }
 
-function useLighter(){
-  if(lighterActive) return;
-  lighterActive = true; lighterTimer = Date.now();
-  sLighter.currentTime = 0; sLighter.play();
-  // affect fiends in short radius immediately
-  let affected = false;
-  enemies.forEach(en=>{
-    const d = Math.hypot(player.x - en.x, player.y - en.y);
-    if(en.type === 'fiend' && d < 160 && en.state !== 'scared'){
-      en.state = 'scared';
-      affected = true;
+function updateEnemies() {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const en = enemies[i];
+        if (en.state === 'dead') continue;
+
+        if (!en.trail) en.trail = [];
+        en.trail.unshift({ x: en.x, y: en.y });
+        if (en.trail.length > 8) en.trail.pop();
+
+        const radius = en.size / 2;
+
+        if (collidesWithHouse(en.x, en.y, radius)) {
+            const distToLeft = Math.abs(en.x - house.x);
+            const distToRight = Math.abs(en.x - (house.x + house.size));
+            const distToTop = Math.abs(en.y - house.y);
+            const distToBottom = Math.abs(en.y - (house.y + house.size));
+            const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+
+            if (minDist === distToTop) en.y = house.y - radius - 2;
+            else if (minDist === distToBottom) en.y = house.y + house.size + radius + 2;
+            else if (minDist === distToLeft) en.x = house.x - radius - 2;
+            else en.x = house.x + house.size + radius + 2;
+        }
+
+        const dx = player.x - en.x;
+        const dy = player.y - en.y;
+        const d = Math.hypot(dx, dy);
+
+        if (player.insideHouse) {
+            en.state = 'idle';
+            en.wanderTimer++;
+            if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
+                en.wanderAngle = rnd(0, Math.PI * 2);
+                en.wanderTimer = 0;
+            }
+            const speed = 0.5 + rnd(0, 0.5);
+            let nx = en.x + Math.cos(en.wanderAngle) * speed;
+            let ny = en.y + Math.sin(en.wanderAngle) * speed;
+            
+            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+        } else {
+            if (en.type === 'red') {
+                if (!flashlightOn) {
+                    en.state = 'idle';
+                    en.wanderTimer++;
+                    if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
+                        en.wanderAngle = rnd(0, Math.PI * 2);
+                        en.wanderTimer = 0;
+                    }
+                    const speed = 0.5 + rnd(0, 0.5);
+                    let nx = en.x + Math.cos(en.wanderAngle) * speed;
+                    let ny = en.y + Math.sin(en.wanderAngle) * speed;
+                    
+                    if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                    if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                } else {
+                    if (en.state !== 'scared') {
+                        en.state = 'chasing';
+                        if (d > 1) {
+                            let nx = en.x + (dx / d) * 0.75;
+                            let ny = en.y + (dy / d) * 0.75;
+                            
+                            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                        }
+                    }
+                    if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !cheatsEnabled) {
+                        player.hp -= 0.35;
+                        if (player.hp <= 0) die("Червоний привид загриз тебе на світлі!");
+                    }
+                }
+            }
+
+            if (en.type === 'blue') {
+                if (flashlightOn) {
+                    en.state = 'idle';
+                    en.wanderTimer++;
+                    if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
+                        en.wanderAngle = rnd(0, Math.PI * 2);
+                        en.wanderTimer = 0;
+                    }
+                    const speed = 0.5 + rnd(0, 0.5);
+                    let nx = en.x + Math.cos(en.wanderAngle) * speed;
+                    let ny = en.y + Math.sin(en.wanderAngle) * speed;
+                    
+                    if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                    if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                } else {
+                    if (en.state !== 'scared') {
+                        en.state = 'chasing';
+                        if (d > 1) {
+                            let nx = en.x + (dx / d) * 0.9;
+                            let ny = en.y + (dy / d) * 0.9;
+                            
+                            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                        }
+                    }
+                    if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !lighterActive && !cheatsEnabled) {
+                        player.hp -= 0.35;
+                        if (player.hp <= 0) die("Синій монстр розірвав тебе у темряві!");
+                    }
+                }
+            }
+        }
+
+        if (en.state === 'scared') {
+            en.y -= 3.5;
+            if (en.y < player.y - 600) {
+                en.state = 'dead';
+                handleEnemyDeath(en);
+            }
+        }
     }
-  });
-  if(affected) msg("Зажигалка: вороги відлякані!");
-  else msg("Зажигалка: нікого поруч не було.");
-  // lighter lasts 2 seconds
-  setTimeout(()=>{ lighterActive = false; }, 2000);
-}
 
-/* ================= ITEMS PICKUP ================= */
-function updateItems(){
-  for(let i = itemsOnMap.length-1; i>=0; i--){
-    const it = itemsOnMap[i];
-    const d = Math.hypot(player.x - it.x, player.y - it.y);
-    // draw in draw loop; pickup only when flashlight is ON and near
-    if(d < 28 && flashlightOn){
-      inventory.push({id:Date.now()+i, name:it.name, type:it.type, desc:it.desc});
-      itemsOnMap.splice(i,1);
-      msg(it.name + " підібрано!");
-      refreshInventory();
-      updateStatsUI();
+    for (let j = enemies.length - 1; j >= 0; j--) {
+        if (enemies[j].state === 'dead') enemies.splice(j, 1);
     }
-  }
 }
 
-/* ================= GAME LOOP DRAW ================= */
-function draw(){
-  // background
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+function updatePlayerPosition() {
+    let isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'] || 
+                   keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
 
-  // items (drops)
-  itemsOnMap.forEach(it=>{
-    ctx.save();
-    // subtle glow if flashlight near
-    const d = Math.hypot(player.x - it.x, player.y - it.y);
-    if(d < 220 && flashlightOn){
-      ctx.globalAlpha = 1;
+    if (player.energy <= 0) isMoving = false;
+    if (!isMoving) return;
+
+    let nextX = player.x;
+    let nextY = player.y;
+
+    if (keys['w'] || keys['ArrowUp']) nextY -= player.speed;
+    if (keys['s'] || keys['ArrowDown']) nextY += player.speed;
+    if (keys['a'] || keys['ArrowLeft']) nextX -= player.speed;
+    if (keys['d'] || keys['ArrowRight']) nextX += player.speed;
+
+    const pHalf = player.size / 2;
+
+    const hLeft = house.x;
+    const hRight = house.x + house.size;
+    const hTop = house.y;
+    const hBottom = house.y + house.size;
+
+    if (player.insideHouse) {
+        if (nextX - pHalf >= hLeft && nextX + pHalf <= hRight) player.x = nextX;
+        if (nextY - pHalf >= hTop && nextY + pHalf <= hBottom) player.y = nextY;
     } else {
-      ctx.globalAlpha = 0.6;
-    }
-    ctx.fillStyle = it.type === 'food' ? '#7ed957' : '#ffcc66';
-    ctx.beginPath(); ctx.rect(it.x-8, it.y-8, 16, 16); ctx.fill();
-    ctx.restore();
-  });
+        const collidesWithBox = (px, py) => {
+            return px + pHalf > hLeft && px - pHalf < hRight &&
+                   py + pHalf > hTop && py - pHalf < hBottom;
+        };
 
-  // enemies
-  enemies.forEach(en=>{
+        let testXOk = !collidesWithBox(nextX, player.y);
+        let testYOk = !collidesWithBox(player.x, nextY);
+
+        if (testXOk) player.x = nextX;
+        if (testYOk) player.y = nextY;
+    }
+}
+
+// Оновлена функція checkInteractions з використанням e.code
+function checkInteractions() {
+    let hintText = '';
+    let canInteract = false;
+
+    const distToDoor = Math.hypot(player.x - (door.x + door.width / 2), player.y - (door.y + door.height / 2));
+    if (distToDoor < 55) {
+        hintText = player.insideHouse ? 'Натисніть E, щоб вийти з дому' : 'Натисніть E, щоб увійти в дім';
+        canInteract = true;
+    }
+
+    const distToChest = Math.hypot(player.x - chest.x, player.y - chest.y);
+    if (distToChest < 45 && player.insideHouse) {
+        hintText = 'Натисніть E, щоб відкрити сундук';
+        canInteract = true;
+    }
+
+    let foundItemIndex = -1;
+    let minDist = 40;
+    for (let i = 0; i < itemsOnMap.length; i++) {
+        const it = itemsOnMap[i];
+        const d = Math.hypot(player.x - it.x, player.y - it.y);
+        if (d < minDist) {
+            minDist = d;
+            foundItemIndex = i;
+        }
+    }
+
+    if (foundItemIndex !== -1 && !player.insideHouse) {
+        hintText = 'Натисніть E, щоб підібрати предмет';
+        canInteract = true;
+    }
+
+    if (canInteract) {
+        pickupHint.style.display = 'block';
+        pickupHint.textContent = hintText;
+
+        // Перевіряємо клавішу E за допомогою keys
+        if (keys['e'] || keys['E'] || keys['у'] || keys['У']) {
+            keys['e'] = false; keys['E'] = false; keys['у'] = false; keys['У'] = false;
+
+            if (distToChest < 45 && player.insideHouse) {
+                toggleContainer(true);
+            } else if (distToDoor < 55) {
+                if (player.insideHouse) {
+                    player.x = door.x + door.width / 2;
+                    player.y = door.y - player.size / 2 - 2;
+                    player.insideHouse = false;
+                    msg("Ви вийшли з дому");
+                } else {
+                    player.x = door.x + door.width / 2;
+                    player.y = door.y + door.height + player.size / 2 + 2;
+                    player.insideHouse = true;
+                    msg("Ви зайшли в дім");
+                }
+            } else if (foundItemIndex !== -1 && !player.insideHouse) {
+                if (inventory.length >= MAX_INVENTORY_SIZE) {
+                    msg("Рюкзак забитий!");
+                } else {
+                    const it = itemsOnMap[foundItemIndex];
+                    inventory.push({ 
+                        id: Date.now() + Math.random(), 
+                        name: it.name, 
+                        type: it.type, 
+                        desc: it.desc,
+                        regenType: it.regenType,
+                        regenVal: it.regenVal 
+                    });
+                    itemsOnMap.splice(foundItemIndex, 1);
+                    msg(it.name + " підібрано в рюкзак!");
+                    refreshBackpack();
+                    updateStatsUI();
+                }
+            }
+        }
+    } else {
+        pickupHint.style.display = 'none';
+    }
+}
+
+// Оновлена функція checkTeleport з використанням e.code
+function checkTeleport() {
+    if (tpPoints.length < 2) return;
+    for (let i = 0; i < tpPoints.length; i++) {
+        const pt = tpPoints[i];
+        if (Math.hypot(player.x - pt.x, player.y - pt.y) < 35) {
+            pickupHint.style.display = 'block';
+            pickupHint.textContent = 'Натисніть E, щоб телепортуватися до іншої точки TP';
+            if (keys['e'] || keys['E'] || keys['у'] || keys['У']) {
+                keys['e'] = false; keys['E'] = false; keys['у'] = false; keys['У'] = false;
+                const targetPt = tpPoints[i === 0 ? 1 : 0];
+                player.x = targetPt.x;
+                player.y = targetPt.y;
+                player.insideHouse = isInsideHouse(player.x, player.y);
+                msg("Телепортація виконана!");
+            }
+            return;
+        }
+    }
+}
+
+// ОНОВЛЕНИЙ ОБРОБНИК KEYDOWN
+window.addEventListener('keydown', (e) => {
+    // Обробка Escape
+    if (e.key === 'Escape') {
+        if (gameState === 'playing') {
+            gameState = 'pause';
+            isGameActive = false;
+            stopAmbient();
+            clearKeys();
+            pickupHint.style.display = 'none';
+            statsEl.style.display = 'none';
+            controlsEl.style.display = 'none';
+            invUI.style.display = 'none';
+            containerUI.style.display = 'none';
+            cooldownHud.style.display = 'none';
+            itemContextMenu.style.display = 'none';
+            pauseUI.classList.remove('hidden');
+            if (gameTimeInterval) {
+                clearInterval(gameTimeInterval);
+                gameTimeInterval = null;
+            }
+        } else if (gameState === 'pause') {
+            pauseUI.classList.add('hidden');
+            statsEl.style.display = 'block';
+            controlsEl.style.display = 'block';
+            cooldownHud.style.display = 'flex';
+            isGameActive = true;
+            gameState = 'playing';
+            startAmbient();
+            clearKeys();
+            if (gameTimeInterval) clearInterval(gameTimeInterval);
+            gameTimeInterval = setInterval(() => {
+                if (gameState === 'playing' && isGameActive) {
+                    gameTime++;
+                    updateStatsUI();
+                }
+            }, 1000);
+        }
+        return;
+    }
+
+    // Обробка клавіші F (ліхтарик) - використовуємо e.code
+    if (e.code === 'KeyF') {
+        e.preventDefault();
+        if (gameState === 'playing' && isGameActive) toggleFlashlight();
+        return;
+    }
+
+    if (gameState !== 'playing' || !isGameActive) return;
+
+    // ОСНОВНА ЛОГІКА ДЛЯ WASD - використовуємо e.code
+    switch(e.code) {
+        case 'KeyW':
+        case 'ArrowUp':
+            keys['w'] = true;
+            e.preventDefault();
+            break;
+        case 'KeyS':
+        case 'ArrowDown':
+            keys['s'] = true;
+            e.preventDefault();
+            break;
+        case 'KeyA':
+        case 'ArrowLeft':
+            keys['a'] = true;
+            e.preventDefault();
+            break;
+        case 'KeyD':
+        case 'ArrowRight':
+            keys['d'] = true;
+            e.preventDefault();
+            break;
+        default:
+            // Для інших клавіш використовуємо e.key
+            keys[e.key] = true;
+    }
+
+    // Обробка клавіші I (інвентар)
+    if (e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        toggleInventory();
+        return;
+    }
+
+    // Обробка клавіші P (телепорт) - використовуємо e.code
+    if (e.code === 'KeyP') {
+        e.preventDefault();
+        if (gameState === 'playing' && isGameActive) {
+            if (tpPoints.length >= 2) {
+                tpPoints.shift();
+            }
+            tpPoints.push({ x: player.x, y: player.y });
+            msg(`Точку TP встановлено (${tpPoints.length}/2). Зелена.`);
+        }
+    }
+});
+
+// ОНОВЛЕНИЙ ОБРОБНИК KEYUP
+window.addEventListener('keyup', (e) => {
+    switch(e.code) {
+        case 'KeyW':
+        case 'ArrowUp':
+            keys['w'] = false;
+            e.preventDefault();
+            break;
+        case 'KeyS':
+        case 'ArrowDown':
+            keys['s'] = false;
+            e.preventDefault();
+            break;
+        case 'KeyA':
+        case 'ArrowLeft':
+            keys['a'] = false;
+            e.preventDefault();
+            break;
+        case 'KeyD':
+        case 'ArrowRight':
+            keys['d'] = false;
+            e.preventDefault();
+            break;
+        default:
+            keys[e.key] = false;
+    }
+});
+
+function toggleInventory(forceState) {
+    const show = typeof forceState === 'boolean' ? forceState : (invUI.style.display === 'none' || invUI.style.display === '');
+    invUI.style.display = show ? 'block' : 'none';
+    invUI.setAttribute('aria-hidden', show ? 'false' : 'true');
+    if (show) refreshBackpack();
+    else itemContextMenu.style.display = 'none';
+}
+
+function refreshBackpack() {
+    inventoryGrid.innerHTML = '';
+    for (let i = 0; i < MAX_INVENTORY_SIZE; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inv-slot';
+        
+        if (inventory[i]) {
+            const it = inventory[i];
+            slot.innerHTML = `<span class="item-name">${it.name}</span>`;
+            slot.title = `${it.name} (${it.desc})`;
+            
+            slot.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            slot.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                selectedItemIndex = i;
+                selectedItemSource = 'backpack';
+                itemContextMenu.style.display = 'block';
+                itemContextMenu.style.left = e.clientX + 'px';
+                itemContextMenu.style.top = e.clientY + 'px';
+            });
+        }
+        inventoryGrid.appendChild(slot);
+    }
+}
+
+function toggleContainer(forceState) {
+    const show = typeof forceState === 'boolean' ? forceState : (containerUI.style.display === 'none' || containerUI.style.display === '');
+    containerUI.style.display = show ? 'block' : 'none';
+    containerUI.setAttribute('aria-hidden', show ? 'false' : 'true');
+    if (show) refreshContainerUI();
+    else itemContextMenu.style.display = 'none';
+}
+
+function refreshContainerUI() {
+    chestGrid.innerHTML = '';
+    for (let i = 0; i < MAX_CHEST_SIZE; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inv-slot';
+        if (chestInventory[i]) {
+            const it = chestInventory[i];
+            slot.innerHTML = `<span class="item-name">${it.name}</span>`;
+            slot.title = `${it.name} (${it.desc})`;
+            slot.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                selectedItemIndex = i;
+                selectedItemSource = 'chest';
+                itemContextMenu.style.display = 'block';
+                itemContextMenu.style.left = e.clientX + 'px';
+                itemContextMenu.style.top = e.clientY + 'px';
+            });
+        }
+        chestGrid.appendChild(slot);
+    }
+
+    backpackGrid.innerHTML = '';
+    for (let i = 0; i < MAX_INVENTORY_SIZE; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inv-slot';
+        if (inventory[i]) {
+            const it = inventory[i];
+            slot.innerHTML = `<span class="item-name">${it.name}</span>`;
+            slot.title = `${it.name} (${it.desc})`;
+            slot.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                selectedItemIndex = i;
+                selectedItemSource = 'backpack';
+                itemContextMenu.style.display = 'block';
+                itemContextMenu.style.left = e.clientX + 'px';
+                itemContextMenu.style.top = e.clientY + 'px';
+            });
+        }
+        backpackGrid.appendChild(slot);
+    }
+}
+
+ctxUseBtn.onclick = () => {
+    itemContextMenu.style.display = 'none';
+    if (selectedItemIndex !== null && selectedItemSource === 'backpack') {
+        useItem(selectedItemIndex);
+        selectedItemIndex = null;
+    } else {
+        msg("Використовувати можна тільки з рюкзака!");
+    }
+};
+
+ctxMoveBtn.onclick = () => {
+    itemContextMenu.style.display = 'none';
+    if (selectedItemIndex !== null) {
+        if (selectedItemSource === 'backpack') {
+            if (chestInventory.length >= MAX_CHEST_SIZE) {
+                msg("Сундук заповнений (максимум 30 предметів)!");
+            } else {
+                const item = inventory.splice(selectedItemIndex, 1)[0];
+                chestInventory.push(item);
+                msg("Переміщено в сундук");
+            }
+        } else if (selectedItemSource === 'chest') {
+            if (inventory.length >= MAX_INVENTORY_SIZE) {
+                msg("Рюкзак заповнений (максимум 20 предметів)!");
+            } else {
+                const item = chestInventory.splice(selectedItemIndex, 1)[0];
+                inventory.push(item);
+                msg("Переміщено в рюкзак");
+            }
+        }
+        refreshContainerUI();
+        refreshBackpack();
+        selectedItemIndex = null;
+    }
+};
+
+ctxDropBtn.onclick = () => {
+    itemContextMenu.style.display = 'none';
+    if (selectedItemIndex !== null) {
+        if (selectedItemSource === 'backpack') {
+            dropItem(selectedItemIndex);
+        } else {
+            const it = chestInventory[selectedItemIndex];
+            itemsOnMap.push({
+                x: player.x + rnd(-20, 20),
+                y: player.y + rnd(-20, 20),
+                type: it.type,
+                name: it.name,
+                desc: it.desc,
+                regenType: it.regenType,
+                regenVal: it.regenVal
+            });
+            chestInventory.splice(selectedItemIndex, 1);
+            refreshContainerUI();
+            msg(`${it.name} викинуто з сундука`);
+        }
+        selectedItemIndex = null;
+    }
+};
+
+window.addEventListener('click', () => {
+    itemContextMenu.style.display = 'none';
+});
+
+function useItem(index) {
+    const it = inventory[index];
+    if (!it) return;
+
+    if (it.regenType === 'hp') {
+        player.hp = Math.min(player.maxHp, player.hp + it.regenVal);
+        msg(`${it.name}: відновлено ${it.regenVal} HP!`);
+    } else {
+        player.energy = Math.min(player.maxEnergy, player.energy + it.regenVal);
+        msg(`${it.name}: відновлено ${it.regenVal}% енергії!`);
+    }
+
+    inventory.splice(index, 1);
+    refreshBackpack();
+    updateStatsUI();
+    updateHomeUI();
+}
+
+function dropItem(index) {
+    const it = inventory[index];
+    if (!it) return;
+    itemsOnMap.push({
+        x: player.x + rnd(-20, 20),
+        y: player.y + rnd(-20, 20),
+        type: it.type,
+        name: it.name,
+        desc: it.desc,
+        regenType: it.regenType,
+        regenVal: it.regenVal
+    });
+    inventory.splice(index, 1);
+    refreshBackpack();
+    msg(`${it.name} викинуто`);
+}
+
+function die(reason) {
+    gameState = 'gameover';
+    player.hp = 0;
+    isGameActive = false;
+    updateStatsUI();
+    stopAmbient();
+    clearKeys();
+
+    if (gameTimeInterval) {
+        clearInterval(gameTimeInterval);
+        gameTimeInterval = null;
+    }
+
+    playDeath();
+    pickupHint.style.display = 'none';
+    statsEl.style.display = 'none';
+    controlsEl.style.display = 'none';
+    invUI.style.display = 'none';
+    containerUI.style.display = 'none';
+    cooldownHud.style.display = 'none';
+    itemContextMenu.style.display = 'none';
+    deathReasonEl.textContent = reason;
+    gameOverScreen.classList.remove('hidden');
+    saveRecords();
+}
+
+function resetGame() {
+    player.x = 0;
+    player.y = 0;
+    player.hp = player.maxHp;
+    player.energy = player.maxEnergy;
+    player.insideHouse = false;
+    stats.INT = 0;
+    stats.redKills = 0;
+    stats.blueKills = 0;
+    gameTime = 0;
+    inventory = [];
+    chestInventory = [];
+    tpPoints = [];
+    itemsOnMap.length = 0;
+    enemies.length = 0;
+    flashlightOn = false;
+    lighterActive = false;
+    screamCooldown = 0;
+    lighterCooldown = 0;
+    screamEffect = null;
+    lighterEffect = null;
+    clearKeys();
+
+    if (gameTimeInterval) {
+        clearInterval(gameTimeInterval);
+        gameTimeInterval = null;
+    }
+
+    for (let i = 0; i < 6; i++) spawnEnemy();
+    for (let i = 0; i < 35; i++) {
+        spawnItemAt(rnd(-1500, 1500), rnd(-1500, 1500));
+    }
+    updateHomeUI();
+    updateStatsUI();
+    updateCooldownUI();
+}
+
+function updateStatsUI() {
+    hpEl.textContent = `❤︎ Життя: ${Math.floor(player.hp)} / ${player.maxHp}`;
+    energyEl.textContent = `𐓏 Енергія: ${Math.floor(player.energy)}%`;
+    intEl.textContent = `⚑ Вбито: ${stats.INT}`;
+    gameTimeEl.textContent = `⏱ Час: ${formatGameTime(gameTime)}`;
+    if (cheatsEnabled) {
+        intEl.textContent += ' ★';
+    }
+}
+
+function updateCooldownUI() {
+    if (player.insideHouse) {
+        screamCdEl.textContent = '✖';
+        screamCdEl.className = 'cd-value disabled';
+        lighterCdEl.textContent = '✖';
+        lighterCdEl.className = 'cd-value disabled';
+        return;
+    }
+
+    if (!flashlightOn) {
+        screamCdEl.textContent = '✖';
+        screamCdEl.className = 'cd-value disabled';
+    } else if (screamCooldown > 0) {
+        screamCdEl.textContent = Math.ceil(screamCooldown) + 'с';
+        screamCdEl.className = 'cd-value';
+    } else {
+        screamCdEl.textContent = '✔';
+        screamCdEl.className = 'cd-value ready';
+    }
+
+    if (flashlightOn) {
+        lighterCdEl.textContent = '✖';
+        lighterCdEl.className = 'cd-value disabled';
+    } else if (lighterCooldown > 0) {
+        lighterCdEl.textContent = Math.ceil(lighterCooldown) + 'с';
+        lighterCdEl.className = 'cd-value';
+    } else {
+        lighterCdEl.textContent = '✔';
+        lighterCdEl.className = 'cd-value ready';
+    }
+}
+
+function toggleFlashlight() {
+    flashlightOn = !flashlightOn;
+    playToggle();
+    updateCooldownUI();
+}
+
+function drawEnemyEntity(en, timeNow, index) {
     ctx.save();
-    if(en.type === 'ghost'){
-      ctx.globalAlpha = (en.state === 'scared') ? 0.6 : 0.9;
-      ctx.fillStyle = 'rgba(180,180,255,0.6)';
-      ctx.beginPath(); ctx.arc(en.x, en.y, en.size, 0, Math.PI*2); ctx.fill();
-      // small eye
-      ctx.fillStyle = '#001'; ctx.beginPath(); ctx.arc(en.x - 6, en.y - 4, 3, 0, Math.PI*2); ctx.fill();
-    } else if(en.type === 'fiend'){
-      ctx.globalAlpha = 0.95;
-      ctx.fillStyle = 'rgba(200,120,80,0.95)';
-      ctx.beginPath(); ctx.ellipse(en.x, en.y, en.size, en.size*0.7, 0, 0, Math.PI*2); ctx.fill();
-      // ember glow when lighter active
-      if(lighterActive){
-        const g = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, 160);
-        g.addColorStop(0, 'rgba(255,200,120,0.12)');
-        g.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
-      }
+    if (en.trail && en.trail.length > 0) {
+        en.trail.forEach((pos, idx) => {
+            const tAlpha = (1 - idx / en.trail.length) * 0.3;
+            ctx.fillStyle = en.type === 'red' ? `rgba(255, 80, 80, ${tAlpha})` : `rgba(80, 160, 255, ${tAlpha})`;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, en.size * (1 - idx / en.trail.length) * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    if (en.type === 'red') {
+        const pulse = Math.sin(timeNow * 3 + index) * 4;
+        const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
+
+        const grad = ctx.createRadialGradient(en.x, en.y, 2, en.x, en.y, en.size + pulse + 8);
+        grad.addColorStop(0, `rgba(255, 80, 80, ${alphaBase})`);
+        grad.addColorStop(0.5, `rgba(220, 40, 40, ${alphaBase * 0.4})`);
+        grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(en.x, en.y, en.size + pulse + 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = en.state === 'scared' ? 'rgba(255, 120, 120, 0.4)' : 'rgba(235, 50, 50, 0.95)';
+        ctx.shadowColor = 'rgba(255, 50, 50, 0.8)';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(en.x, en.y, en.size * 0.85, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(en.x - 4, en.y - 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(en.x + 4, en.y - 3, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+    } else {
+        const pulse = Math.sin(timeNow * 3 + index) * 4;
+        const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
+
+        const grad = ctx.createRadialGradient(en.x, en.y, 2, en.x, en.y, en.size + pulse + 8);
+        grad.addColorStop(0, `rgba(60, 150, 255, ${alphaBase})`);
+        grad.addColorStop(0.5, `rgba(30, 90, 220, ${alphaBase * 0.4})`);
+        grad.addColorStop(1, 'rgba(0, 50, 200, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(en.x, en.y, en.size + pulse + 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = en.state === 'scared' ? 'rgba(100, 180, 255, 0.4)' : 'rgba(40, 130, 245, 0.95)';
+        ctx.shadowColor = 'rgba(40, 130, 245, 0.8)';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(en.x, en.y, en.size * 0.85, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(en.x - 4, en.y - 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(en.x + 4, en.y - 3, 3.5, 0, Math.PI * 2);
+        ctx.fill();
     }
     ctx.restore();
-  });
-
-  // player
-  ctx.save();
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(player.x - player.size/2, player.y - player.size/2, player.size, player.size);
-  // flashlight / darkness
-  if(flashlightOn){
-    const grad = ctx.createRadialGradient(player.x, player.y, 20, player.x, player.y, 260);
-    grad.addColorStop(0, 'rgba(255,255,210,0.95)');
-    grad.addColorStop(0.4,'rgba(255,255,180,0.5)');
-    grad.addColorStop(1, 'rgba(0,0,0,1)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-  } else {
-    ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  }
-  // lighter flame visual (if active)
-  if(lighterActive){
-    const lg = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 120);
-    lg.addColorStop(0,'rgba(255,220,120,0.9)');
-    lg.addColorStop(0.4,'rgba(255,100,40,0.25)');
-    lg.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle = lg; ctx.fillRect(0,0,canvas.width,canvas.height);
-  }
-  ctx.restore();
-
-  // HUD small indicator for lighter
-  ctx.save();
-  ctx.fillStyle = '#ddd'; ctx.font = '14px monospace';
-  ctx.fillText(`Світло: ${flashlightOn ? 'ON' : 'OFF'}    Lighter: ${lighterActive ? 'ON' : 'OFF'}`, 20, canvas.height - 20);
-  ctx.restore();
 }
 
-/* ================= GAME TICK ================= */
-function gameTick(){
-  // movement
-  if(keys['w']||keys['ArrowUp']) player.y -= player.speed;
-  if(keys['s']||keys['ArrowDown']) player.y += player.speed;
-  if(keys['a']||keys['ArrowLeft']) player.x -= player.speed;
-  if(keys['d']||keys['ArrowRight']) player.x += player.speed;
-  // clamp to screen
-  player.x = Math.max(10, Math.min(canvas.width-10, player.x));
-  player.y = Math.max(10, Math.min(canvas.height-10, player.y));
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // spawn enemies periodically
-  spawnLoop();
+    ctx.save();
+    ctx.translate(canvas.width / 2 - player.x, canvas.height / 2 - player.y);
 
-  // update enemies, items
-  updateEnemies();
-  updateItems();
+    const timeNow = Date.now() * 0.005;
 
-  // lighter auto-off safety (in case)
-  if(lighterActive && Date.now() - lighterTimer > 2200){ lighterActive = false; }
+    if (!player.insideHouse) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(player.x - canvas.width, player.y - canvas.height, canvas.width * 2, canvas.height * 2);
 
-  // update UI
-  updateStatsUI();
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1.5;
+        let startX = Math.floor((player.x - canvas.width) / 150) * 150;
+        let endX = startX + canvas.width * 2;
+        let startY = Math.floor((player.y - canvas.height) / 150) * 150;
+        let endY = startY + canvas.height * 2;
+        for (let x = startX; x <= endX; x += 150) {
+            ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x, endY); ctx.stroke();
+        }
+        for (let y = startY; y <= endY; y += 150) {
+            ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(endX, y); ctx.stroke();
+        }
 
-  // draw
-  draw();
+        itemsOnMap.forEach(it => {
+            const distToPlayer = Math.hypot(player.x - it.x, player.y - it.y);
+            if (flashlightOn && distToPlayer < 400) {
+                ctx.save();
+                ctx.fillStyle = it.regenType === 'hp' ? '#ff7777' : '#f2c94a';
+                ctx.shadowColor = it.regenType === 'hp' ? 'rgba(255,119,119,0.4)' : 'rgba(242,201,74,0.4)';
+                ctx.shadowBlur = 16;
+                ctx.fillRect(it.x - 8, it.y - 8, 16, 16);
+                ctx.restore();
+            }
+        });
 
-  requestAnimationFrame(gameTick);
+        enemies.forEach((en, index) => {
+            if (!collidesWithHouse(en.x, en.y, en.size / 2)) {
+                drawEnemyEntity(en, timeNow, index);
+            }
+        });
+
+        tpPoints.forEach((pt, index) => {
+            ctx.save();
+            ctx.fillStyle = '#27ae60';
+            ctx.shadowColor = 'rgba(39, 174, 96, 0.8)';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px monospace';
+            ctx.fillText(`TP${index+1}`, pt.x - 10, pt.y + 4);
+            ctx.restore();
+        });
+
+        ctx.save();
+        ctx.fillStyle = house.color;
+        ctx.strokeStyle = '#5a3818';
+        ctx.lineWidth = 4;
+        ctx.fillRect(house.x, house.y, house.size, house.size);
+        ctx.strokeRect(house.x, house.y, house.size, house.size);
+
+        ctx.fillStyle = door.color;
+        ctx.shadowColor = 'rgba(127, 140, 141, 0.6)';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(door.x, door.y, door.width, door.height);
+        ctx.restore();
+
+    } else {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(player.x - canvas.width * 2, player.y - canvas.height * 2, canvas.width * 4, canvas.height * 4);
+
+        ctx.save();
+        ctx.fillStyle = '#140e08';
+        ctx.fillRect(house.x, house.y, house.size, house.size);
+        ctx.strokeStyle = '#5a3818';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(house.x, house.y, house.size, house.size);
+
+        ctx.fillStyle = door.color;
+        ctx.fillRect(door.x, door.y, door.width, door.height);
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = chest.color;
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.4)';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(chest.x - chest.size / 2, chest.y - chest.size / 2, chest.size, chest.size);
+        ctx.restore();
+
+        tpPoints.forEach((pt, index) => {
+            if (isInsideHouse(pt.x, pt.y)) {
+                ctx.save();
+                ctx.fillStyle = '#27ae60';
+                ctx.shadowColor = 'rgba(39, 174, 96, 0.8)';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px monospace';
+                ctx.fillText(`TP${index+1}`, pt.x - 10, pt.y + 4);
+                ctx.restore();
+            }
+        });
+    }
+
+    if (screamEffect) {
+        const se = screamEffect;
+        ctx.save();
+        const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, se.radius);
+        grad.addColorStop(0, `rgba(255,255,255,${se.alpha * 0.7})`);
+        grad.addColorStop(0.3, `rgba(220,220,220,${se.alpha * 0.35})`);
+        grad.addColorStop(1, `rgba(200,200,200,0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(se.x, se.y, se.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        se.radius += 5;
+        se.alpha *= 0.97;
+        if (se.alpha < 0.01 || se.radius > se.maxRadius) screamEffect = null;
+    }
+
+    if (lighterEffect) {
+        const le = lighterEffect;
+        ctx.save();
+        const length = le.length * le.alpha;
+        ctx.translate(le.x, le.y);
+        ctx.rotate(le.angle);
+        ctx.beginPath();
+        ctx.moveTo(length, 0); ctx.lineTo(-10, -12); ctx.lineTo(-10, 12); ctx.closePath();
+        ctx.fillStyle = `rgba(255, 210, 90, ${le.alpha * 0.7})`;
+        ctx.shadowColor = `rgba(255, 210, 90, ${le.alpha * 0.5})`;
+        ctx.shadowBlur = 35;
+        ctx.fill();
+        ctx.restore();
+
+        le.alpha *= 0.98;
+        if (le.alpha < 0.02) lighterEffect = null;
+    }
+
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(255,255,255,0.3)';
+    ctx.shadowBlur = 25;
+    ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
+    ctx.restore();
+
+    ctx.restore();
+
+    if (!player.insideHouse) {
+        if (flashlightOn) {
+            const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 70, canvas.width / 2, canvas.height / 2, 420);
+            grad.addColorStop(0, 'rgba(250, 250, 235, 0.45)');
+            grad.addColorStop(0.4, 'rgba(220, 220, 200, 0.15)');
+            grad.addColorStop(0.8, 'rgba(10, 10, 18, 0.85)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 1)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+            const gradDark = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 30, canvas.width / 2, canvas.height / 2, 300);
+            gradDark.addColorStop(0, 'rgba(15, 15, 25, 0.1)');
+            gradDark.addColorStop(0.6, 'rgba(4, 4, 8, 0.92)');
+            gradDark.addColorStop(1, 'rgba(0, 0, 0, 1)');
+            ctx.fillStyle = gradDark;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+    } else {
+        const gradInside = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 20, canvas.width / 2, canvas.height / 2, 250);
+        gradInside.addColorStop(0, 'rgba(160, 140, 100, 0.22)');
+        gradInside.addColorStop(0.6, 'rgba(70, 60, 40, 0.35)');
+        gradInside.addColorStop(1, 'rgba(0, 0, 0, 1)');
+        ctx.fillStyle = gradInside;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if (cheatsEnabled && gameState === 'playing') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(76, 175, 80, 0.7)';
+        ctx.font = '14px monospace';
+        ctx.fillText('★ ЧИТИ УВІМКНЕНО', 20, 50);
+        ctx.restore();
+    }
 }
 
-/* update HP / stats UI */
-function updateStatsUI(){
-  hpEl.textContent = `HP: ${Math.floor(player.hp)} / ${player.maxHp}`;
-  intEl.textContent = `INT: ${stats.INT}`;
+function gameTick(timestamp) {
+    if (timestamp) {
+        const delta = (timestamp - lastTimestamp) / 1000;
+        lastTimestamp = timestamp;
+
+        if (screamCooldown > 0) screamCooldown = Math.max(0, screamCooldown - delta);
+        if (lighterCooldown > 0) lighterCooldown = Math.max(0, lighterCooldown - delta);
+        updateCooldownUI();
+    }
+
+    if (gameState === 'menu' || gameState === 'settings') {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else if (gameState === 'playing') {
+        if (isGameActive) {
+            updatePlayerPosition();
+            spawnLoop();
+            updateEnemies();
+            checkInteractions();
+            checkTeleport();
+
+            if (lighterActive && Date.now() - lighterTimer > 5200) {
+                lighterActive = false;
+            }
+            updateStatsUI();
+        }
+        draw();
+    } else {
+        draw();
+    }
+    requestAnimationFrame(gameTick);
 }
 
-/* die */
-function die(reason){
-  player.hp = 0;
-  updateStatsUI();
-  sAmbient.pause();
-  msg(reason);
-  setTimeout(()=>{ alert(reason); location.reload(); }, 600);
+function startGame(loadFromSave = false) {
+    initAudio();
+    clearKeys();
+    
+    menuScreen.classList.add('hidden');
+    settingsUI.classList.add('hidden');
+    rulesUI.classList.add('hidden');
+    eulaUI.classList.add('hidden');
+    pauseUI.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    statsEl.style.display = 'block';
+    controlsEl.style.display = 'block';
+    cooldownHud.style.display = 'flex';
+
+    if (loadFromSave) {
+        if (!loadGame()) resetGame();
+    } else {
+        deleteSave();
+        resetGame();
+    }
+
+    isGameActive = true;
+    gameState = 'playing';
+    startAmbient();
+
+    if (gameTimeInterval) clearInterval(gameTimeInterval);
+    gameTimeInterval = setInterval(() => {
+        if (gameState === 'playing' && isGameActive) {
+            gameTime++;
+            updateStatsUI();
+        }
+    }, 1000);
 }
 
-/* ================= START ================= */
+playBtn.addEventListener('click', () => {
+    initAudio();
+    if (hasSave()) {
+        const choice = confirm('Знайдено збережену гру. Продовжити? (ОК - так, Відміна - нова гра)');
+        if (choice) startGame(true);
+        else startGame(false);
+    } else {
+        startGame(false);
+    }
+});
+
+cheatBtn.addEventListener('click', () => {
+    cheatsEnabled = !cheatsEnabled;
+    cheatBtn.textContent = cheatsEnabled ? 'ЧИТИ: УВІМКНЕНО' : 'ЧИТИ: ВИМКНЕНО';
+    cheatBtn.className = 'menu-btn ' + (cheatsEnabled ? 'cheat-on' : 'cheat-off');
+    if (cheatsEnabled) {
+        player.hp = player.maxHp;
+        player.energy = player.maxEnergy;
+        updateStatsUI();
+        msg('★ Чити увімкнено!');
+    } else {
+        msg('Чити вимкнено');
+    }
+});
+
+settingsBtn.addEventListener('click', () => {
+    previousState = gameState;
+    menuScreen.classList.add('hidden');
+    settingsUI.classList.remove('hidden');
+});
+
+rulesBtn.addEventListener('click', () => {
+    settingsUI.classList.add('hidden');
+    rulesUI.classList.remove('hidden');
+});
+
+closeRulesBtn.addEventListener('click', () => {
+    rulesUI.classList.add('hidden');
+    settingsUI.classList.remove('hidden');
+});
+
+signatureEl.addEventListener('click', () => {
+    menuScreen.classList.add('hidden');
+    eulaUI.classList.remove('hidden');
+});
+
+closeEulaBtn.addEventListener('click', () => {
+    eulaUI.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+});
+
+pauseSettingsBtn.addEventListener('click', () => {
+    previousState = gameState;
+    pauseUI.classList.add('hidden');
+    settingsUI.classList.remove('hidden');
+});
+
+backBtn.addEventListener('click', () => {
+    settingsUI.classList.add('hidden');
+    if (previousState === 'pause') {
+        pauseUI.classList.remove('hidden');
+    } else {
+        menuScreen.classList.remove('hidden');
+    }
+});
+
+resumeBtn.addEventListener('click', () => {
+    pauseUI.classList.add('hidden');
+    statsEl.style.display = 'block';
+    controlsEl.style.display = 'block';
+    cooldownHud.style.display = 'flex';
+    isGameActive = true;
+    gameState = 'playing';
+    startAmbient();
+    clearKeys();
+
+    if (gameTimeInterval) clearInterval(gameTimeInterval);
+    gameTimeInterval = setInterval(() => {
+        if (gameState === 'playing' && isGameActive) {
+            gameTime++;
+            updateStatsUI();
+        }
+    }, 1000);
+});
+
+saveExitBtn.addEventListener('click', () => {
+    if (gameState === 'playing') saveGame();
+    pauseUI.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+    gameState = 'menu';
+    isGameActive = false;
+    stopAmbient();
+    clearKeys();
+    if (gameTimeInterval) {
+        clearInterval(gameTimeInterval);
+        gameTimeInterval = null;
+    }
+    msg('Гру збережено!');
+});
+
+respawnBtn.addEventListener('click', () => {
+    gameOverScreen.classList.add('hidden');
+    statsEl.style.display = 'block';
+    controlsEl.style.display = 'block';
+    cooldownHud.style.display = 'flex';
+    deleteSave();
+    resetGame();
+    isGameActive = true;
+    gameState = 'playing';
+    startAmbient();
+
+    if (gameTimeInterval) clearInterval(gameTimeInterval);
+    gameTimeInterval = setInterval(() => {
+        if (gameState === 'playing' && isGameActive) {
+            gameTime++;
+            updateStatsUI();
+        }
+    }, 1000);
+});
+
+toMenuBtn.addEventListener('click', () => {
+    gameOverScreen.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+    gameState = 'menu';
+    isGameActive = false;
+    stopAmbient();
+    clearKeys();
+    if (gameTimeInterval) {
+        clearInterval(gameTimeInterval);
+        gameTimeInterval = null;
+    }
+});
+
+volRange.addEventListener('input', (e) => setAmbientVolume(parseFloat(e.target.value)));
+closeInvBtn.addEventListener('click', () => toggleInventory(false));
+closeContainerBtn.addEventListener('click', () => toggleContainer(false));
+
+canvas.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
+
+canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (gameState === 'playing' && isGameActive) {
+        scream(mouseX, mouseY);
+    }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+    e.button === 0 && gameState === 'playing' && isGameActive && useLighter(mouseX, mouseY);
+});
+
 gameTick();
-
-/* small demo: spawn a couple of enemies at start */
-spawnEnemy('ghost'); spawnEnemy('fiend');
-
-</script>
+    </script>
 </body>
 </html>
