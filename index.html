@@ -1899,38 +1899,37 @@ function drawEnemyEntity(en, timeNow, index) {
         ctx.shadowColor = '#fff';
         ctx.shadowBlur = 10;
         ctx.beginPath();
-        ctx.arc(en.x - 4, renderY - 3, 3.5, 0, Math.PI * 2);
-        ctx.arc(en.x + 4, renderY - 3, 3.5, 0, Math.PI * 2);
+ctx.arc(en.x - 6, renderY - 3, 4, 0, Math.PI * 2);
+ctx.arc(en.x + 6, renderY - 3, 4, 0, Math.PI * 2);
         ctx.fill();
 
-    } else {
-        const pulse = Math.sin(timeNow * 3 + index) * 4;
-        const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
+} else {
+    const pulse = Math.sin(timeNow * 3 + index) * 4;
+    const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
 
-        const grad = ctx.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
-        grad.addColorStop(0, `rgba(60, 150, 255, ${alphaBase})`);
-        grad.addColorStop(0.5, `rgba(30, 90, 220, ${alphaBase * 0.4})`);
-        grad.addColorStop(1, 'rgba(0, 50, 200, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
-        ctx.fill();
+    const grad = ctx.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
+    grad.addColorStop(0, `rgba(60, 150, 255, ${alphaBase})`);
+    grad.addColorStop(0.5, `rgba(30, 90, 220, ${alphaBase * 0.4})`);
+    grad.addColorStop(1, 'rgba(0, 50, 200, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
+    ctx.fill();
 
-        ctx.fillStyle = en.state === 'scared' ? 'rgba(100, 180, 255, 0.4)' : 'rgba(40, 130, 245, 0.95)';
-        ctx.shadowColor = 'rgba(40, 130, 245, 0.8)';
-        ctx.shadowBlur = 18;
-        ctx.beginPath();
-        ctx.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
-        ctx.fill();
+    ctx.fillStyle = en.state === 'scared' ? 'rgba(100, 180, 255, 0.4)' : 'rgba(40, 130, 245, 0.95)';
+    ctx.shadowColor = 'rgba(40, 130, 245, 0.8)';
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
+    ctx.fill();
 
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(en.x - 4, renderY - 3, 3.5, 0, Math.PI * 2);
-        ctx.arc(en.x + 4, renderY - 3, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-    }
+ctx.shadowBlur = 0;
+ctx.beginPath();
+ctx.arc(en.x, renderY - 2, 15, 0.05 * Math.PI, 0.95 * Math.PI);  // ← renderY - 2 (піднято)
+ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+ctx.lineWidth = 3;
+ctx.stroke();
+}
     ctx.restore();
 }
 
