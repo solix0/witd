@@ -622,6 +622,8 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 canvas.width = innerWidth;
+canvas.height = innerWidth;
+canvas.width = innerWidth;
 canvas.height = innerHeight;
 
 window.addEventListener('resize', () => {
@@ -743,13 +745,16 @@ let cheatsEnabled = false;
 const player = {
     x: 0,
     y: 0,
+    targetX: 0,
+    targetY: 0,
     size: 24,
     speed: 4,
     hp: 100,
     maxHp: 100,
     energy: 100,
     maxEnergy: 100,
-    insideHouse: false
+    insideHouse: false,
+    walkCycle: 0
 };
 
 const house = {
@@ -938,7 +943,7 @@ function saveGame() {
         chestInventory: chestInventory,
         tpPoints: tpPoints,
         itemsOnMap: itemsOnMap,
-        enemies: enemies.map(en => ({ x: en.x, y: en.y, size: en.size, type: en.type, state: en.state, wanderAngle: en.wanderAngle, wanderTimer: en.wanderTimer }))
+        enemies: enemies.map(en => ({ x: en.x, y: en.y, size: en.size, type: en.type, state: en.state, wanderAngle: en.wanderAngle, wanderTimer: en.wanderTimer, walkCycle: en.walkCycle }))
     };
     localStorage.setItem('whisper_save', JSON.stringify(saveData));
     msg('Гру збережено!');
@@ -950,6 +955,8 @@ function loadGame() {
 
     player.x = saveData.player.x;
     player.y = saveData.player.y;
+    player.targetX = player.x;
+    player.targetY = player.y;
     player.hp = saveData.player.hp;
     player.maxHp = saveData.player.maxHp;
     player.energy = saveData.player.energy !== undefined ? saveData.player.energy : 100;
@@ -968,7 +975,8 @@ function loadGame() {
     itemsOnMap = saveData.itemsOnMap || [];
     enemies = saveData.enemies.map(en => ({
         x: en.x, y: en.y, size: en.size, type: en.type, state: en.state,
-        wanderAngle: en.wanderAngle || 0, wanderTimer: en.wanderTimer || 0
+        wanderAngle: en.wanderAngle || 0, wanderTimer: en.wanderTimer || 0,
+        walkCycle: en.walkCycle || 0, trail: []
     }));
     return true;
 }
@@ -1002,6 +1010,7 @@ function spawnEnemy() {
         state: 'idle',
         wanderAngle: rnd(0, Math.PI * 2),
         wanderTimer: 0,
+        walkCycle: rnd(0, 100),
         trail: []
     });
 }
@@ -1162,6 +1171,9 @@ function updateEnemies() {
         const en = enemies[i];
         if (en.state === 'dead') continue;
 
+        if (!en.walkCycle) en.walkCycle = 0;
+        en.walkCycle += 0.25;
+
         if (!en.trail) en.trail = [];
         en.trail.unshift({ x: en.x, y: en.y });
         if (en.trail.length > 8) en.trail.pop();
@@ -1217,8 +1229,9 @@ function updateEnemies() {
                     if (en.state !== 'scared') {
                         en.state = 'chasing';
                         if (d > 1) {
-                            let nx = en.x + (dx / d) * 0.75;
-                            let ny = en.y + (dy / d) * 0.75;
+                            const swayAngle = Math.atan2(dy, dx) + Math.sin(en.walkCycle * 0.3) * 0.25;
+                            let nx = en.x + Math.cos(swayAngle) * 0.85;
+                            let ny = en.y + Math.sin(swayAngle) * 0.85;
                             
                             if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
                             if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
@@ -1249,8 +1262,9 @@ function updateEnemies() {
                     if (en.state !== 'scared') {
                         en.state = 'chasing';
                         if (d > 1) {
-                            let nx = en.x + (dx / d) * 0.9;
-                            let ny = en.y + (dy / d) * 0.9;
+                            const swayAngle = Math.atan2(dy, dx) + Math.cos(en.walkCycle * 0.3) * 0.25;
+                            let nx = en.x + Math.cos(swayAngle) * 1.0;
+                            let ny = en.y + Math.sin(swayAngle) * 1.0;
                             
                             if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
                             if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
@@ -1265,7 +1279,7 @@ function updateEnemies() {
         }
 
         if (en.state === 'scared') {
-            en.y -= 3.5;
+            en.y -= 4;
             if (en.y < player.y - 600) {
                 en.state = 'dead';
                 handleEnemyDeath(en);
@@ -1283,41 +1297,47 @@ function updatePlayerPosition() {
                    keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
 
     if (player.energy <= 0) isMoving = false;
-    if (!isMoving) return;
 
-    let nextX = player.x;
-    let nextY = player.y;
+    if (isMoving) {
+        player.walkCycle += 0.25;
+        let nextX = player.targetX;
+        let nextY = player.targetY;
 
-    if (keys['w'] || keys['ArrowUp']) nextY -= player.speed;
-    if (keys['s'] || keys['ArrowDown']) nextY += player.speed;
-    if (keys['a'] || keys['ArrowLeft']) nextX -= player.speed;
-    if (keys['d'] || keys['ArrowRight']) nextX += player.speed;
+        if (keys['w'] || keys['ArrowUp']) nextY -= player.speed;
+        if (keys['s'] || keys['ArrowDown']) nextY += player.speed;
+        if (keys['a'] || keys['ArrowLeft']) nextX -= player.speed;
+        if (keys['d'] || keys['ArrowRight']) nextX += player.speed;
 
-    const pHalf = player.size / 2;
+        const pHalf = player.size / 2;
+        const hLeft = house.x;
+        const hRight = house.x + house.size;
+        const hTop = house.y;
+        const hBottom = house.y + house.size;
 
-    const hLeft = house.x;
-    const hRight = house.x + house.size;
-    const hTop = house.y;
-    const hBottom = house.y + house.size;
+        if (player.insideHouse) {
+            if (nextX - pHalf >= hLeft && nextX + pHalf <= hRight) player.targetX = nextX;
+            if (nextY - pHalf >= hTop && nextY + pHalf <= hBottom) player.targetY = nextY;
+        } else {
+            const collidesWithBox = (px, py) => {
+                return px + pHalf > hLeft && px - pHalf < hRight &&
+                       py + pHalf > hTop && py - pHalf < hBottom;
+            };
 
-    if (player.insideHouse) {
-        if (nextX - pHalf >= hLeft && nextX + pHalf <= hRight) player.x = nextX;
-        if (nextY - pHalf >= hTop && nextY + pHalf <= hBottom) player.y = nextY;
+            let testXOk = !collidesWithBox(nextX, player.targetY);
+            let testYOk = !collidesWithBox(player.targetX, nextY);
+
+            if (testXOk) player.targetX = nextX;
+            if (testYOk) player.targetY = nextY;
+        }
     } else {
-        const collidesWithBox = (px, py) => {
-            return px + pHalf > hLeft && px - pHalf < hRight &&
-                   py + pHalf > hTop && py - pHalf < hBottom;
-        };
-
-        let testXOk = !collidesWithBox(nextX, player.y);
-        let testYOk = !collidesWithBox(player.x, nextY);
-
-        if (testXOk) player.x = nextX;
-        if (testYOk) player.y = nextY;
+        player.walkCycle = 0;
     }
+
+    // Більш плавна інтерполяція (Lerp) для м'якого руху без різких ривків
+    player.x += (player.targetX - player.x) * 0.15;
+    player.y += (player.targetY - player.y) * 0.15;
 }
 
-// Оновлена функція checkInteractions з використанням e.code
 function checkInteractions() {
     let hintText = '';
     let canInteract = false;
@@ -1354,7 +1374,6 @@ function checkInteractions() {
         pickupHint.style.display = 'block';
         pickupHint.textContent = hintText;
 
-        // Перевіряємо клавішу E за допомогою keys
         if (keys['e'] || keys['E'] || keys['у'] || keys['У']) {
             keys['e'] = false; keys['E'] = false; keys['у'] = false; keys['У'] = false;
 
@@ -1362,13 +1381,15 @@ function checkInteractions() {
                 toggleContainer(true);
             } else if (distToDoor < 55) {
                 if (player.insideHouse) {
-                    player.x = door.x + door.width / 2;
-                    player.y = door.y - player.size / 2 - 2;
+                    player.targetX = door.x + door.width / 2;
+                    player.targetY = door.y - player.size / 2 - 2;
+                    player.x = player.targetX; player.y = player.targetY;
                     player.insideHouse = false;
                     msg("Ви вийшли з дому");
                 } else {
-                    player.x = door.x + door.width / 2;
-                    player.y = door.y + door.height + player.size / 2 + 2;
+                    player.targetX = door.x + door.width / 2;
+                    player.targetY = door.y + door.height + player.size / 2 + 2;
+                    player.x = player.targetX; player.y = player.targetY;
                     player.insideHouse = true;
                     msg("Ви зайшли в дім");
                 }
@@ -1397,7 +1418,6 @@ function checkInteractions() {
     }
 }
 
-// Оновлена функція checkTeleport з використанням e.code
 function checkTeleport() {
     if (tpPoints.length < 2) return;
     for (let i = 0; i < tpPoints.length; i++) {
@@ -1408,8 +1428,10 @@ function checkTeleport() {
             if (keys['e'] || keys['E'] || keys['у'] || keys['У']) {
                 keys['e'] = false; keys['E'] = false; keys['у'] = false; keys['У'] = false;
                 const targetPt = tpPoints[i === 0 ? 1 : 0];
-                player.x = targetPt.x;
-                player.y = targetPt.y;
+                player.targetX = targetPt.x;
+                player.targetY = targetPt.y;
+                player.x = player.targetX;
+                player.y = player.targetY;
                 player.insideHouse = isInsideHouse(player.x, player.y);
                 msg("Телепортація виконана!");
             }
@@ -1418,9 +1440,7 @@ function checkTeleport() {
     }
 }
 
-// ОНОВЛЕНИЙ ОБРОБНИК KEYDOWN
 window.addEventListener('keydown', (e) => {
-    // Обробка Escape
     if (e.key === 'Escape') {
         if (gameState === 'playing') {
             gameState = 'pause';
@@ -1459,7 +1479,6 @@ window.addEventListener('keydown', (e) => {
         return;
     }
 
-    // Обробка клавіші F (ліхтарик) - використовуємо e.code
     if (e.code === 'KeyF') {
         e.preventDefault();
         if (gameState === 'playing' && isGameActive) toggleFlashlight();
@@ -1468,7 +1487,6 @@ window.addEventListener('keydown', (e) => {
 
     if (gameState !== 'playing' || !isGameActive) return;
 
-    // ОСНОВНА ЛОГІКА ДЛЯ WASD - використовуємо e.code
     switch(e.code) {
         case 'KeyW':
         case 'ArrowUp':
@@ -1491,18 +1509,15 @@ window.addEventListener('keydown', (e) => {
             e.preventDefault();
             break;
         default:
-            // Для інших клавіш використовуємо e.key
             keys[e.key] = true;
     }
 
-    // Обробка клавіші I (інвентар)
     if (e.key.toLowerCase() === 'i') {
         e.preventDefault();
         toggleInventory();
         return;
     }
 
-    // Обробка клавіші P (телепорт) - використовуємо e.code
     if (e.code === 'KeyP') {
         e.preventDefault();
         if (gameState === 'playing' && isGameActive) {
@@ -1515,7 +1530,6 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// ОНОВЛЕНИЙ ОБРОБНИК KEYUP
 window.addEventListener('keyup', (e) => {
     switch(e.code) {
         case 'KeyW':
@@ -1572,6 +1586,7 @@ function refreshBackpack() {
                 e.preventDefault();
                 selectedItemIndex = i;
                 selectedItemSource = 'backpack';
+                ctxMoveBtn.style.display = (containerUI.style.display === 'block') ? 'block' : 'none';
                 itemContextMenu.style.display = 'block';
                 itemContextMenu.style.left = e.clientX + 'px';
                 itemContextMenu.style.top = e.clientY + 'px';
@@ -1603,6 +1618,7 @@ function refreshContainerUI() {
                 e.preventDefault();
                 selectedItemIndex = i;
                 selectedItemSource = 'chest';
+                ctxMoveBtn.style.display = 'block';
                 itemContextMenu.style.display = 'block';
                 itemContextMenu.style.left = e.clientX + 'px';
                 itemContextMenu.style.top = e.clientY + 'px';
@@ -1624,6 +1640,7 @@ function refreshContainerUI() {
                 e.preventDefault();
                 selectedItemIndex = i;
                 selectedItemSource = 'backpack';
+                ctxMoveBtn.style.display = 'block';
                 itemContextMenu.style.display = 'block';
                 itemContextMenu.style.left = e.clientX + 'px';
                 itemContextMenu.style.top = e.clientY + 'px';
@@ -1761,6 +1778,8 @@ function die(reason) {
 function resetGame() {
     player.x = 0;
     player.y = 0;
+    player.targetX = 0;
+    player.targetY = 0;
     player.hp = player.maxHp;
     player.energy = player.maxEnergy;
     player.insideHouse = false;
@@ -1842,6 +1861,10 @@ function toggleFlashlight() {
 
 function drawEnemyEntity(en, timeNow, index) {
     ctx.save();
+    
+    const bobOffset = Math.sin((en.walkCycle || 0) * 0.4) * 4;
+    const renderY = en.y + bobOffset;
+
     if (en.trail && en.trail.length > 0) {
         en.trail.forEach((pos, idx) => {
             const tAlpha = (1 - idx / en.trail.length) * 0.3;
@@ -1856,56 +1879,56 @@ function drawEnemyEntity(en, timeNow, index) {
         const pulse = Math.sin(timeNow * 3 + index) * 4;
         const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
 
-        const grad = ctx.createRadialGradient(en.x, en.y, 2, en.x, en.y, en.size + pulse + 8);
+        const grad = ctx.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
         grad.addColorStop(0, `rgba(255, 80, 80, ${alphaBase})`);
         grad.addColorStop(0.5, `rgba(220, 40, 40, ${alphaBase * 0.4})`);
         grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(en.x, en.y, en.size + pulse + 8, 0, Math.PI * 2);
+        ctx.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = en.state === 'scared' ? 'rgba(255, 120, 120, 0.4)' : 'rgba(235, 50, 50, 0.95)';
         ctx.shadowColor = 'rgba(255, 50, 50, 0.8)';
         ctx.shadowBlur = 18;
         ctx.beginPath();
-        ctx.arc(en.x, en.y, en.size * 0.85, 0, Math.PI * 2);
+        ctx.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#fff';
         ctx.shadowColor = '#fff';
         ctx.shadowBlur = 10;
         ctx.beginPath();
-        ctx.arc(en.x - 4, en.y - 3, 3.5, 0, Math.PI * 2);
-        ctx.arc(en.x + 4, en.y - 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(en.x - 4, renderY - 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(en.x + 4, renderY - 3, 3.5, 0, Math.PI * 2);
         ctx.fill();
 
     } else {
         const pulse = Math.sin(timeNow * 3 + index) * 4;
         const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
 
-        const grad = ctx.createRadialGradient(en.x, en.y, 2, en.x, en.y, en.size + pulse + 8);
+        const grad = ctx.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
         grad.addColorStop(0, `rgba(60, 150, 255, ${alphaBase})`);
         grad.addColorStop(0.5, `rgba(30, 90, 220, ${alphaBase * 0.4})`);
         grad.addColorStop(1, 'rgba(0, 50, 200, 0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(en.x, en.y, en.size + pulse + 8, 0, Math.PI * 2);
+        ctx.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = en.state === 'scared' ? 'rgba(100, 180, 255, 0.4)' : 'rgba(40, 130, 245, 0.95)';
         ctx.shadowColor = 'rgba(40, 130, 245, 0.8)';
         ctx.shadowBlur = 18;
         ctx.beginPath();
-        ctx.arc(en.x, en.y, en.size * 0.85, 0, Math.PI * 2);
+        ctx.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#fff';
         ctx.shadowColor = '#fff';
         ctx.shadowBlur = 10;
         ctx.beginPath();
-        ctx.arc(en.x - 4, en.y - 3, 3.5, 0, Math.PI * 2);
-        ctx.arc(en.x + 4, en.y - 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(en.x - 4, renderY - 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(en.x + 4, renderY - 3, 3.5, 0, Math.PI * 2);
         ctx.fill();
     }
     ctx.restore();
@@ -2054,11 +2077,18 @@ function draw() {
         if (le.alpha < 0.02) lighterEffect = null;
     }
 
+    // Погойдування та легкий нахил квадрата гравця (зменшено різкість, додано м'якість для очей)
+    const playerBob = Math.sin(player.walkCycle) * 2.5;
+    const playerTilt = Math.sin(player.walkCycle * 0.5) * 0.04;
+    const renderPlayerY = player.y + playerBob;
+
     ctx.save();
-    ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(255,255,255,0.3)';
-    ctx.shadowBlur = 25;
-    ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
+    ctx.translate(player.x, renderPlayerY);
+    ctx.rotate(playerTilt);
+    ctx.fillStyle = '#e8e8e8';
+    ctx.shadowColor = 'rgba(232, 232, 232, 0.25)';
+    ctx.shadowBlur = 12;
+    ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
     ctx.restore();
 
     ctx.restore();
