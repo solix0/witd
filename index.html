@@ -247,7 +247,6 @@
             color: #ff6b6b;
         }
 
-        /* Стилі для міні-компаса */
         #compassHud {
             position: fixed;
             right: 25px;
@@ -277,7 +276,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Стилі для міні-карти */
         #minimapHud {
             position: fixed;
             left: 20px;
@@ -418,7 +416,6 @@
             width: 100%;
         }
 
-        /* Стилі для меню телепортації (L) */
         #tpUI {
             position: fixed;
             left: 50%;
@@ -635,6 +632,7 @@
 
             <h3>Керування</h3>
             • <b>WASD / Стрілки</b> — Рух персонажа.<br>
+            • <b>Space (Пробіл)</b> — Стрибок у бік курсору (-5% енергії, імунітет від атаки в стрибку).<br>
             • <b>F</b> — Увімкнути / вимкнути ліхтарик.<br>
             • <b>K</b> — Увімкнути / вимкнути компас.<br>
             • <b>M</b> — Увімкнути / вимкнути міні-карту.<br>
@@ -649,7 +647,7 @@
         <button class="menu-btn" id="closeRulesBtn">ЗАКРИТИ</button>
     </div>
 
-<div id="eulaUI" class="overlay hidden">
+    <div id="eulaUI" class="overlay hidden">
         <h2>Ліцензійна угода (EULA)</h2>
         <div class="modal-text-box">
             <b>Власник і розробник:</b> solix<br><br>
@@ -657,7 +655,7 @@
             Забороняється продавати, поширювати, заявляти про право власності або використовувати цю онлайн гру з комерційною метою чи для надання платних послуг.<br><br>
             Ця онлайн гра надається на умовах «як є», без жодних гарантій.<br><br>
             Усі авторські права та права інтелектуальної власності належать solix.<br><br>
-            <b>Версія гри:</b> v4.17
+            <b>Версія гри:</b> v4.18
         </div>
         <button class="menu-btn" id="closeEulaBtn">ЗАКРИТИ</button>
     </div>
@@ -688,19 +686,16 @@
         </div>
     </div>
 
-    <!-- Міні-компас -->
     <div id="compassHud">
         <canvas id="compassCanvas" width="60" height="60"></canvas>
         <div id="compassDistance">0 м</div>
     </div>
 
-    <!-- Міні-карта -->
     <div id="minimapHud">
         <div id="minimapTitle">МІНІ-КАРТА (M)</div>
         <canvas id="minimapCanvas" width="210" height="170"></canvas>
     </div>
 
-    <!-- Меню телепортації (L) -->
     <div id="tpUI" role="dialog" aria-hidden="true">
         <h3>ТОЧКИ ТЕЛЕПОРТАЦІЇ (L)</h3>
         <div class="tp-grid" id="tpGrid"></div>
@@ -737,7 +732,6 @@
         <button id="ctxDropBtn">Викинути</button>
     </div>
 
-    <!-- Контекстне меню телепортації -->
     <div id="tpContextMenu">
         <button id="ctxTpDeleteBtn">Видалити</button>
     </div>
@@ -785,8 +779,6 @@
             }
             return audioCtx;
         }
-
-        // ===== ЗВУКИ (WEB AUDIO API) =====
 
         const MenuSounds = {
             playHover: () => {
@@ -902,6 +894,25 @@
             } catch (e) {}
         }
 
+        // Звук отримання урону
+        function playHitSound() {
+            if (soundSettings.interface <= 0) return;
+            try {
+                const ctx = initAudio();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3 * soundSettings.interface, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+            } catch (e) {}
+        }
+
         function playEnemyDeath() {
             if (soundSettings.interface <= 0) return;
             try {
@@ -948,7 +959,6 @@
             });
         }
 
-        // ===== ЗМІННІ ГРИ =====
         const canvas = document.getElementById('game');
         const ctx2 = canvas.getContext('2d');
         canvas.width = innerWidth;
@@ -984,7 +994,29 @@
         const player = {
             x: 0, y: 0, targetX: 0, targetY: 0,
             size: 24, speed: 4, hp: 100, maxHp: 100,
-            energy: 100, maxEnergy: 100, insideHouse: false, walkCycle: 0
+            energy: 100, maxEnergy: 100, insideHouse: false, onHouse: false, walkCycle: 0,
+            hitFlashTimer: 0 // Таймер червоного підсвічування при уроні
+        };
+
+        // Функція завдання урону з ефектом та звуком
+        function damagePlayer(amount, reasonText) {
+            if (cheatsEnabled) return;
+            player.hp -= amount;
+            player.hitFlashTimer = 15; // Тривалість підсвічування в кадрах
+            playHitSound();
+            if (player.hp <= 0) {
+                die(reasonText);
+            }
+            updateStatsUI();
+        }
+
+        let playerJump = {
+            active: false,
+            progress: 0,
+            startX: 0,
+            startY: 0,
+            destX: 0,
+            destY: 0
         };
 
         const house = { x: 200, y: -180, size: 360, color: '#8b5a2b' };
@@ -1144,7 +1176,7 @@
 
         function saveGame() {
             const saveData = {
-                player: { x: player.x, y: player.y, hp: player.hp, maxHp: player.maxHp, energy: player.energy, maxEnergy: player.maxEnergy, insideHouse: player.insideHouse },
+                player: { x: player.x, y: player.y, hp: player.hp, maxHp: player.maxHp, energy: player.energy, maxEnergy: player.maxEnergy, insideHouse: player.insideHouse, onHouse: player.onHouse },
                 stats: { INT: stats.INT, redKills: stats.redKills, blueKills: stats.blueKills },
                 gameTime: gameTime,
                 flashlightOn: flashlightOn,
@@ -1173,6 +1205,7 @@
             player.energy = saveData.player.energy !== undefined ? saveData.player.energy : 100;
             player.maxEnergy = saveData.player.maxEnergy !== undefined ? saveData.player.maxEnergy : 100;
             player.insideHouse = saveData.player.insideHouse || false;
+            player.onHouse = saveData.player.onHouse || false;
 
             stats.INT = saveData.stats.INT;
             stats.redKills = saveData.stats.redKills;
@@ -1263,8 +1296,37 @@
             itemsOnMap.push({ x: ix, y: iy, type: type, name: name, desc: desc, regenType: regenType, regenVal: regenVal });
         }
 
+        function triggerJump() {
+            if (playerJump.active) return;
+            if (player.energy < 5) {
+                msg("✖ Недостатньо енергії для стрибка (потрібно 5%)!");
+                return;
+            }
+
+            player.energy -= 5;
+            updateStatsUI();
+
+            const worldX = mouseX - canvas.width / 2 + player.x;
+            const worldY = mouseY - canvas.height / 2 + player.y;
+            const angle = Math.atan2(worldY - player.y, worldX - player.x);
+            const jumpDistance = 180;
+
+            let destX = player.x + Math.cos(angle) * jumpDistance;
+            let destY = player.y + Math.sin(angle) * jumpDistance;
+
+            playerJump = {
+                active: true,
+                progress: 0,
+                startX: player.x,
+                startY: player.y,
+                destX: destX,
+                destY: destY
+            };
+            msg("Стрибок! (-5% енергії)");
+        }
+
         function scream(mx, my) {
-            if (player.insideHouse) { msg("✖ Атака в домі заблокована!"); return; }
+            if (player.insideHouse || player.onHouse) { msg("✖ Атака в домі або на даху заблокована!"); return; }
             if (!flashlightOn) { msg("✖ Крик доступний тільки коли ліхтарик увімкнено!"); return; }
             if (screamCooldown > 0) { msg(`Крик перезаряджається (${Math.ceil(screamCooldown)}с)`); return; }
             if (player.energy < 10) {
@@ -1297,7 +1359,7 @@
         }
 
         function useLighter(mx, my) {
-            if (player.insideHouse) { msg("✖ Атака в домі заблокована!"); return; }
+            if (player.insideHouse || player.onHouse) { msg("✖ Атака в домі або на даху заблокована!"); return; }
             if (flashlightOn) { msg("✖ Запальничка доступна тільки коли ліхтарик вимкнено!"); return; }
             if (lighterCooldown > 0) { msg(`Запальничка перезаряджається (${Math.ceil(lighterCooldown)}с)`); return; }
             if (player.energy < 5) {
@@ -1382,7 +1444,7 @@
                 const dy = player.y - en.y;
                 const d = Math.hypot(dx, dy);
 
-                if (player.insideHouse) {
+                if (player.insideHouse || player.onHouse) {
                     en.state = 'idle';
                     en.wanderTimer++;
                     if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
@@ -1422,9 +1484,8 @@
                                     if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
                                 }
                             }
-                            if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !cheatsEnabled) {
-                                player.hp -= 0.35;
-                                if (player.hp <= 0) die("Червоний привид загриз тебе на світлі!");
+                            if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !playerJump.active && !cheatsEnabled) {
+                                damagePlayer(0.35, "Червоний привид загриз тебе на світлі!");
                             }
                         }
                     }
@@ -1455,9 +1516,8 @@
                                     if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
                                 }
                             }
-                            if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !lighterActive && !cheatsEnabled) {
-                                player.hp -= 0.35;
-                                if (player.hp <= 0) die("Синій монстр розірвав тебе у темряві!");
+                            if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !lighterActive && !playerJump.active && !cheatsEnabled) {
+                                damagePlayer(0.35, "Синій монстр розірвав тебе у темряві!");
                             }
                         }
                     }
@@ -1478,6 +1538,61 @@
         }
 
         function updatePlayerPosition() {
+            if (player.hitFlashTimer > 0) player.hitFlashTimer--;
+
+            if (playerJump.active) {
+                playerJump.progress += 0.1 / 3; 
+                if (playerJump.progress >= 1) {
+                    playerJump.progress = 1;
+                    playerJump.active = false;
+                    if (isInsideHouse(player.x, player.y) && !player.insideHouse) {
+                        player.onHouse = true;
+                        msg("Ви застрибнули на дах будинку!");
+                    }
+                }
+                player.x = playerJump.startX + (playerJump.destX - playerJump.startX) * playerJump.progress;
+                player.y = playerJump.startY + (playerJump.destY - playerJump.startY) * playerJump.progress;
+                player.targetX = player.x;
+                player.targetY = player.y;
+                return;
+            }
+
+            if (player.onHouse) {
+                let isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
+                    keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+
+                if (player.energy <= 0) isMoving = false;
+
+                if (isMoving) {
+                    player.walkCycle += 0.25;
+                    let nextX = player.targetX;
+                    let nextY = player.targetY;
+
+                    if (keys['w'] || keys['ArrowUp']) nextY -= player.speed;
+                    if (keys['s'] || keys['ArrowDown']) nextY += player.speed;
+                    if (keys['a'] || keys['ArrowLeft']) nextX -= player.speed;
+                    if (keys['d'] || keys['ArrowRight']) nextX += player.speed;
+
+                    player.targetX = nextX;
+                    player.targetY = nextY;
+                } else {
+                    player.walkCycle = 0;
+                }
+
+                player.x += (player.targetX - player.x) * 0.15;
+                player.y += (player.targetY - player.y) * 0.15;
+
+                if (!isInsideHouse(player.x, player.y)) {
+                    player.onHouse = false;
+                    damagePlayer(5, "Ти загинув, спустившись з даху!");
+                    if (player.hp > 0) {
+                        msg("Ви спустилися з даху (-5 HP)!");
+                    }
+                    updateStatsUI();
+                }
+                return;
+            }
+
             let isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
                 keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
 
@@ -1544,7 +1659,7 @@
                 }
             }
 
-            if (foundItemIndex !== -1 && !player.insideHouse) {
+            if (foundItemIndex !== -1 && !player.insideHouse && !player.onHouse) {
                 hintText = 'Натисніть E, щоб підібрати предмет';
                 canInteract = true;
             }
@@ -1572,7 +1687,7 @@
                             player.insideHouse = true;
                             msg("Ви зайшли в дім");
                         }
-                    } else if (foundItemIndex !== -1 && !player.insideHouse) {
+                    } else if (foundItemIndex !== -1 && !player.insideHouse && !player.onHouse) {
                         if (inventory.length >= MAX_INVENTORY_SIZE) {
                             msg("Рюкзак забитий!");
                         } else {
@@ -1625,6 +1740,14 @@
                     gameTimeInterval = setInterval(() => {
                         if (gameState === 'playing' && isGameActive) { gameTime++; updateStatsUI(); }
                     }, 1000);
+                }
+                return;
+            }
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (gameState === 'playing' && isGameActive) {
+                    triggerJump();
                 }
                 return;
             }
@@ -1712,6 +1835,7 @@
                         player.x = pt.x;
                         player.y = pt.y;
                         player.insideHouse = isInsideHouse(player.x, player.y);
+                        player.onHouse = false;
                         toggleTpUI(false);
                         msg(`Телепортація до точки #${i + 1}!`);
                     });
@@ -1945,7 +2069,7 @@
 
         function resetGame() {
             player.x = 0; player.y = 0; player.targetX = 0; player.targetY = 0;
-            player.hp = player.maxHp; player.energy = player.maxEnergy; player.insideHouse = false;
+            player.hp = player.maxHp; player.energy = player.maxEnergy; player.insideHouse = false; player.onHouse = false;
             stats.INT = 0; stats.redKills = 0; stats.blueKills = 0; gameTime = 0;
             inventory = []; chestInventory = []; tpPoints = [null, null, null, null, null];
             itemsOnMap.length = 0; enemies.length = 0;
@@ -1971,7 +2095,7 @@
         }
 
         function updateCooldownUI() {
-            if (player.insideHouse) {
+            if (player.insideHouse || player.onHouse) {
                 screamCdEl.textContent = '✖'; screamCdEl.className = 'cd-value disabled';
                 lighterCdEl.textContent = '✖'; lighterCdEl.className = 'cd-value disabled';
                 return;
@@ -2231,7 +2355,6 @@
                     }
                 });
 
-                // 1. Спочатку малюємо точки телепортації (tp) ПІД привидами[cite: 7]
                 tpPoints.forEach((pt, index) => {
                     if (pt) {
                         ctx2.save();
@@ -2248,7 +2371,6 @@
                     }
                 });
 
-                // 2. Потім малюємо привидів НАД точками телепортації[cite: 7]
                 enemies.forEach((en, index) => {
                     if (!collidesWithHouse(en.x, en.y, en.size / 2)) {
                         drawEnemyEntity(en, timeNow, index);
@@ -2346,16 +2468,28 @@
                 if (le.alpha < 0.02) lighterEffect = null;
             }
 
+            const jumpHeightOffset = playerJump.active ? Math.sin(playerJump.progress * Math.PI) * 35 : 0;
+            const jumpScale = playerJump.active ? 1 + Math.sin(playerJump.progress * Math.PI) * 0.4 : 1;
             const playerBob = Math.sin(player.walkCycle) * 2.5;
             const playerTilt = Math.sin(player.walkCycle * 0.5) * 0.04;
-            const renderPlayerY = player.y + playerBob;
+            const renderPlayerY = player.y + playerBob - jumpHeightOffset;
 
             ctx2.save();
             ctx2.translate(player.x, renderPlayerY);
             ctx2.rotate(playerTilt);
-            ctx2.fillStyle = '#e8e8e8';
-            ctx2.shadowColor = 'rgba(232, 232, 232, 0.25)';
-            ctx2.shadowBlur = 12;
+            ctx2.scale(jumpScale, jumpScale);
+            
+            // Якщо гравця щойно вдарили — підсвічуємо його червоним кольором
+            if (player.hitFlashTimer > 0) {
+                ctx2.fillStyle = '#ff3333';
+                ctx2.shadowColor = 'rgba(255, 50, 50, 0.9)';
+                ctx2.shadowBlur = 30;
+            } else {
+                ctx2.fillStyle = '#ffffff';
+                ctx2.shadowColor = 'rgba(255, 255, 255, 0.6)';
+                ctx2.shadowBlur = playerJump.active ? 25 : 12;
+            }
+
             ctx2.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
             ctx2.restore();
 
