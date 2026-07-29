@@ -247,6 +247,67 @@
             color: #ff6b6b;
         }
 
+        /* Стилі для міні-компаса */
+        #compassHud {
+            position: fixed;
+            right: 25px;
+            bottom: 25px;
+            width: 100px;
+            height: 100px;
+            background: var(--hud-bg);
+            border: 2px solid #333;
+            border-radius: 50%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 55;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+        }
+
+        #compassCanvas {
+            width: 60px;
+            height: 60px;
+        }
+
+        #compassDistance {
+            font-size: 0.65rem;
+            color: #aaa;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Стилі для міні-карти */
+        #minimapHud {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            width: 230px;
+            height: 200px;
+            background: var(--hud-bg);
+            border: 2px solid #222;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 55;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            padding: 5px;
+        }
+
+        #minimapCanvas {
+            width: 210px;
+            height: 170px;
+            display: block;
+        }
+
+        #minimapTitle {
+            font-size: 0.65rem;
+            color: #777;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
         #inventoryUI {
             position: fixed;
             left: 50%;
@@ -357,7 +418,73 @@
             width: 100%;
         }
 
-        #itemContextMenu {
+        /* Стилі для меню телепортації (L) */
+        #tpUI {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            max-width: 90%;
+            padding: 20px;
+            background: var(--panel-bg);
+            border: 2px solid #333;
+            color: var(--hud-fg);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95);
+            display: none;
+            z-index: 200;
+            text-align: center;
+        }
+
+        #tpUI h3 {
+            margin: 0 0 15px 0;
+            font-weight: 300;
+            letter-spacing: 2px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            color: #fff;
+        }
+
+        .tp-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tp-slot {
+            padding: 12px;
+            border: 1px solid #444;
+            background: rgba(255, 255, 255, 0.02);
+            color: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            transition: background 0.1s ease, border-color 0.1s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tp-slot.active {
+            border-color: #7CFC00;
+            background: rgba(124, 252, 0, 0.15);
+        }
+
+        .tp-slot.active:hover {
+            background: rgba(124, 252, 0, 0.3);
+            border-color: #7CFC00;
+        }
+
+        .tp-slot.inactive {
+            border-color: #222;
+            background: rgba(255, 255, 255, 0.01);
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        #itemContextMenu, #tpContextMenu {
             position: fixed;
             background: #101015;
             border: 1px solid #444;
@@ -367,7 +494,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.9);
         }
 
-        #itemContextMenu button {
+        #itemContextMenu button, #tpContextMenu button {
             display: block;
             background: transparent;
             border: none;
@@ -381,7 +508,7 @@
             transition: background 0.05s ease;
         }
 
-        #itemContextMenu button:hover {
+        #itemContextMenu button:hover, #tpContextMenu button:hover {
             background: rgba(255, 255, 255, 0.15);
         }
 
@@ -439,22 +566,6 @@
             border-top: 1px solid #222;
             padding-top: 6px;
         }
-
-        #controls {
-            position: fixed;
-            left: 20px;
-            top: 20px;
-            background: var(--hud-bg);
-            color: var(--hud-fg);
-            padding: 12px 16px;
-            display: none;
-            border: 2px solid #222;
-            font-size: 0.75rem;
-            line-height: 1.6;
-            max-width: 230px;
-        }
-
-        #controls div { padding: 2px 0; }
     </style>
 </head>
 <body>
@@ -493,18 +604,29 @@
 
     <div id="settingsUI" class="overlay hidden">
         <h2>НАЛАШТУВАННЯ</h2>
-        <div style="margin: 20px 0; text-align:center; width:100%; max-width:300px;">
-            <label style="display:block; margin-bottom:10px; color:#777; letter-spacing:1px;">Гучність фону</label>
-            <input type="range" id="volRange" min="0" max="1" step="0.1" value="0.25" style="width:100%; background:#111; height:4px; -webkit-appearance:none;">
-        </div>
-        <div style="margin: 0px 0; text-align:center;">
+        <div style="margin: 6px 0; display:flex; flex-direction:column; align-items:center;">
+            <button class="menu-btn" id="soundSettingsMenuBtn">ЗВУК</button>
             <button class="menu-btn" id="cheatBtn">ЧИТИ: ВИМКНЕНО</button>
+            <button class="menu-btn" id="rulesBtn">ПРАВИЛА ГРИ</button>
+            <button class="menu-btn" id="backBtn">НАЗАД</button>
         </div>
-        <button class="menu-btn" id="rulesBtn">ПРАВИЛА ГРИ</button>
-        <button class="menu-btn" id="backBtn">НАЗАД</button>
     </div>
 
-    <!-- Модальне вікно: Правила гри -->
+    <div id="soundSettingsUI" class="overlay hidden">
+        <h2>НАЛАШТУВАННЯ ЗВУКУ</h2>
+        <div class="modal-text-box" style="background:transparent; border:none; max-height:none; overflow:visible; text-align:center;">
+            <div style="margin: 20px 0;">
+                <label style="display:block; margin-bottom:10px; color:#aaa; letter-spacing:1px;">ГУЧНІСТЬ ЕФЕКТІВ (EFFECTS)</label>
+                <input type="range" id="interfaceVolRange" min="0" max="1" step="0.1" value="0.7" style="width:240px; background:#111; height:4px; -webkit-appearance:none;">
+            </div>
+            <div style="margin: 20px 0;">
+                <label style="display:block; margin-bottom:10px; color:#aaa; letter-spacing:1px;">ГУЧНІСТЬ ФОНОВОЇ МУЗИКИ (MUSIC)</label>
+                <input type="range" id="musicVolRange" min="0" max="1" step="0.1" value="0.5" style="width:240px; background:#111; height:4px; -webkit-appearance:none;">
+            </div>
+        </div>
+        <button class="menu-btn" id="closeSoundSettingsBtn">ЗАКРИТИ</button>
+    </div>
+
     <div id="rulesUI" class="overlay hidden">
         <h2>ПРАВИЛА ГРИ</h2>
         <div class="modal-text-box">
@@ -514,31 +636,25 @@
             <h3>Керування</h3>
             • <b>WASD / Стрілки</b> — Рух персонажа.<br>
             • <b>F</b> — Увімкнути / вимкнути ліхтарик.<br>
+            • <b>K</b> — Увімкнути / вимкнути компас.<br>
+            • <b>M</b> — Увімкнути / вимкнути міні-карту.<br>
+            • <b>L</b> — Відкрити меню телепортації (5 точок, ЛКМ телепортує, ПКМ відкриває контекстне меню видалення).<br>
             • <b>ЛКМ</b> — Запальничка (працює при ВИМКНЕНОМУ ліхтарику, витрачає 5% енергії). Відлякує синіх монстрів.<br>
             • <b>ПКМ</b> — Крик (працює при УВІМКНЕНОМУ ліхтарику, витрачає 10% енергії). Лякає та знищує червоних привидів.<br>
-            • <b>E</b> — Взаємодія (увійти/вийти з дому, відкрити сундук, підібрати предмети або телепортуватися).<br>
-            • <b>P</b> — Встановити точку телепортації (максимум 2 точки).<br>
+            • <b>E</b> — Взаємодія (увійти/вийти з дому, відкрити сундук, підібрати предмети).<br>
+            • <b>P</b> — Встановити точку телепортації (до 5 точок).<br>
             • <b>I</b> — Відкрити рюкзак.<br>
             • <b>ESC</b> — Пауза.
-
-            <h3>Предмети та виживання</h3>
-            • На карті розкидані предмети для відновлення HP (бінти, аптечки) та енергії (яблука, вода, бутерброди, м'ясо).<br>
-            • Вдома у вас є безпечна зона та сундук на 30 слотів для зберігання речей.<br>
-            • У домі вороги не атакують, але й використання здібностей (крик/запальничка) там заблоковане.
         </div>
         <button class="menu-btn" id="closeRulesBtn">ЗАКРИТИ</button>
     </div>
 
-    <!-- Модальне вікно: EULA -->
     <div id="eulaUI" class="overlay hidden">
         <h2>Ліцензійна угода (EULA)</h2>
         <div class="modal-text-box">
             <b>Власник і розробник:</b> solix<br><br>
             Ця онлайн гра ліцензована виключно для особистого використання.<br><br>
-            Забороняється продавати, поширювати, заявляти про право власності або використовувати цю онлайн гру з комерційною метою чи для надання платних послуг.<br><br>
-            Ця онлайн гра надається на умовах «як є», без жодних гарантій.<br><br>
-            Усі авторські права та права інтелектуальної власності належать solix.<br><br>
-            <b>Версія гри:</b> v4.17
+            <b>Версія гри:</b> v4.19
         </div>
         <button class="menu-btn" id="closeEulaBtn">ЗАКРИТИ</button>
     </div>
@@ -567,6 +683,25 @@
             <span class="cd-label">ЗАПАЛЬНИЧКА</span>
             <span class="cd-value" id="lighterCd">✔</span>
         </div>
+    </div>
+
+    <!-- Міні-компас -->
+    <div id="compassHud">
+        <canvas id="compassCanvas" width="60" height="60"></canvas>
+        <div id="compassDistance">0 м</div>
+    </div>
+
+    <!-- Міні-карта -->
+    <div id="minimapHud">
+        <div id="minimapTitle">МІНІ-КАРТА (M)</div>
+        <canvas id="minimapCanvas" width="210" height="170"></canvas>
+    </div>
+
+    <!-- Меню телепортації (L) -->
+    <div id="tpUI" role="dialog" aria-hidden="true">
+        <h3>ТОЧКИ ТЕЛЕПОРТАЦІЇ (L)</h3>
+        <div class="tp-grid" id="tpGrid"></div>
+        <button id="closeTpBtn" class="menu-btn" style="width:100%; margin:0;">ЗАКРИТИ</button>
     </div>
 
     <div id="inventoryUI" role="dialog" aria-hidden="true">
@@ -599,1756 +734,1889 @@
         <button id="ctxDropBtn">Викинути</button>
     </div>
 
-    <div id="pickupHint">Натисніть E, щоб увійти / вийти / відкрити сундук</div>
-    <div id="controls">
-        <div>WASD / ←↑→↓ — рух</div>
-        <div>F — ліхтарик</div>
-        <div>ПКМ — крик (-10% енергії)</div>
-        <div>ЛКМ — запальничка (-5% енергії)</div>
-        <div>E — взаємодія</div>
-        <div>P — встановити точку TP</div>
-        <div>I — рюкзак</div>
-        <div>ESC — пауза</div>
+    <!-- Контекстне меню телепортації -->
+    <div id="tpContextMenu">
+        <button id="ctxTpDeleteBtn">Видалити</button>
     </div>
+
+    <div id="pickupHint">Натисніть E, щоб увійти / вийти / відкрити сундук</div>
+    
     <div id="stats">
         <div id="hp">❤︎ Життя: 100 / 100</div>
         <div id="energy">𐓏 Енергія: 100%</div>
         <div id="int">⚑ Вбито: 0</div>
-        <div id="gameTime">⏱ Час: 0 сек</div>
+        <div id="gameTime">↻ Час: 0 сек</div>
         <div id="message"></div>
     </div>
 
+    <audio id="bgMusic" src="overlay.mp3" loop></audio>
+
     <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-canvas.width = innerWidth;
-canvas.height = innerWidth;
-canvas.width = innerWidth;
-canvas.height = innerHeight;
-
-window.addEventListener('resize', () => {
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
-});
-
-window.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-});
-
-function formatGameTime(totalSeconds) {
-    if (totalSeconds < 60) {
-        return `${totalSeconds} сек`;
-    } else if (totalSeconds < 3600) {
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        return seconds > 0 ? `${minutes} хв ${seconds} сек` : `${minutes} хв`;
-    } else {
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        return minutes > 0 ? `${hours} год ${minutes} хв` : `${hours} год`;
-    }
-}
-
-let audioCtx = null;
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-    return audioCtx;
-}
-
-function createBeep(freq, duration, type = 'sine', volume = 0.3) {
-    try {
-        const ctx = initAudio();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = type;
-        osc.frequency.value = freq;
-        gain.gain.value = volume;
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + duration);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
-function playToggle() { createBeep(800, 0.1, 'square', 0.15); }
-function playScream() {
-    createBeep(200, 0.3, 'sawtooth', 0.2);
-    setTimeout(() => createBeep(150, 0.4, 'sawtooth', 0.15), 150);
-}
-function playDeath() {
-    createBeep(400, 0.2, 'sawtooth', 0.2);
-    setTimeout(() => createBeep(300, 0.2, 'sawtooth', 0.2), 200);
-    setTimeout(() => createBeep(200, 0.3, 'sawtooth', 0.2), 400);
-}
-function playLighter() {
-    createBeep(600, 0.15, 'sine', 0.1);
-    setTimeout(() => createBeep(800, 0.1, 'sine', 0.08), 100);
-}
-
-let ambientNode = null;
-let ambientGain = null;
-let isAmbientPlaying = false;
-
-function startAmbient() {
-    if (isAmbientPlaying) return;
-    try {
-        const ctx = initAudio();
-        const bufferSize = 2 * ctx.sampleRate;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * 0.1;
-        }
-        ambientNode = ctx.createBufferSource();
-        ambientNode.buffer = buffer;
-        ambientNode.loop = true;
-        ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.08;
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 300;
-        ambientNode.connect(filter);
-        filter.connect(ambientGain);
-        ambientGain.connect(ctx.destination);
-        ambientNode.start();
-        isAmbientPlaying = true;
-    } catch (e) {}
-}
-
-function stopAmbient() {
-    if (ambientNode && isAmbientPlaying) {
-        try {
-            ambientNode.stop();
-            ambientNode.disconnect();
-            isAmbientPlaying = false;
-        } catch (e) {}
-    }
-}
-
-function setAmbientVolume(val) {
-    if (ambientGain) ambientGain.gain.value = val * 0.08;
-}
-
-let gameState = 'menu';
-let previousState = 'menu';
-let cheatsEnabled = false;
-
-const player = {
-    x: 0,
-    y: 0,
-    targetX: 0,
-    targetY: 0,
-    size: 24,
-    speed: 4,
-    hp: 100,
-    maxHp: 100,
-    energy: 100,
-    maxEnergy: 100,
-    insideHouse: false,
-    walkCycle: 0
-};
-
-const house = {
-    x: 200,
-    y: -180,
-    size: 360,
-    color: '#8b5a2b'
-};
-
-const door = {
-    x: house.x + house.size / 2 - 25,
-    y: house.y - 6,
-    width: 50,
-    height: 12,
-    color: '#7f8c8d'
-};
-
-const chest = {
-    x: house.x + 60,
-    y: house.y + 60,
-    size: 30,
-    color: '#ffd700'
-};
-
-let tpPoints = [];
-let mouseX = 0;
-let mouseY = 0;
-
-const stats = {
-    INT: 0,
-    redKills: 0,
-    blueKills: 0,
-    bestMatchKills: 0,
-    bestRedKills: 0,
-    bestBlueKills: 0,
-    bestTime: 0
-};
-
-let gameTime = 0;
-let gameTimeInterval = null;
-let isGameActive = false;
-
-const COOLDOWN = { scream: 5, lighter: 5 };
-let screamCooldown = 0;
-let lighterCooldown = 0;
-let lastTimestamp = 0;
-
-let screamEffect = null;
-let lighterEffect = null;
-
-const recBestMatchEl = document.getElementById('recBestMatch');
-const recRedEl = document.getElementById('recRed');
-const recBlueEl = document.getElementById('recBlue');
-const recTimeEl = document.getElementById('recTime');
-const screamCdEl = document.getElementById('screamCd');
-const lighterCdEl = document.getElementById('lighterCd');
-const cheatBtn = document.getElementById('cheatBtn');
-const gameTimeEl = document.getElementById('gameTime');
-
-function loadRecords() {
-    stats.bestRedKills = parseInt(localStorage.getItem('whisper_best_red') || '0', 10);
-    stats.bestBlueKills = parseInt(localStorage.getItem('whisper_best_blue') || '0', 10);
-    stats.bestMatchKills = parseInt(localStorage.getItem('whisper_best_match') || '0', 10);
-    stats.bestTime = parseInt(localStorage.getItem('whisper_best_time') || '0', 10);
-    updateHomeUI();
-}
-
-function saveRecords() {
-    if (cheatsEnabled) return;
-    localStorage.setItem('whisper_best_red', stats.bestRedKills);
-    localStorage.setItem('whisper_best_blue', stats.bestBlueKills);
-    localStorage.setItem('whisper_best_match', stats.bestMatchKills);
-    localStorage.setItem('whisper_best_time', stats.bestTime);
-    updateHomeUI();
-}
-
-function updateHomeUI() {
-    recBestMatchEl.textContent = stats.bestMatchKills;
-    recRedEl.textContent = stats.bestRedKills;
-    recBlueEl.textContent = stats.bestBlueKills;
-    recTimeEl.textContent = formatGameTime(stats.bestTime);
-}
-
-loadRecords();
-
-let keys = {};
-function clearKeys() { keys = {}; }
-
-let flashlightOn = false;
-let lighterActive = false;
-let lighterTimer = 0;
-
-let inventory = [];
-const MAX_INVENTORY_SIZE = 20;
-
-let chestInventory = [];
-const MAX_CHEST_SIZE = 30;
-
-let itemsOnMap = [];
-let enemies = [];
-let lastSpawn = Date.now();
-let lastItemSpawn = Date.now();
-
-const menuScreen = document.getElementById('menuScreen');
-const settingsUI = document.getElementById('settingsUI');
-const rulesUI = document.getElementById('rulesUI');
-const eulaUI = document.getElementById('eulaUI');
-const pauseUI = document.getElementById('pauseUI');
-const gameOverScreen = document.getElementById('gameOverScreen');
-const deathReasonEl = document.getElementById('deathReason');
-const cooldownHud = document.getElementById('cooldownHud');
-
-const playBtn = document.getElementById('playBtn');
-const settingsBtn = document.getElementById('settingsBtn');
-const rulesBtn = document.getElementById('rulesBtn');
-const closeRulesBtn = document.getElementById('closeRulesBtn');
-const signatureEl = document.getElementById('signature');
-const closeEulaBtn = document.getElementById('closeEulaBtn');
-const backBtn = document.getElementById('backBtn');
-const resumeBtn = document.getElementById('resumeBtn');
-const pauseSettingsBtn = document.getElementById('pauseSettingsBtn');
-const saveExitBtn = document.getElementById('saveExitBtn');
-const respawnBtn = document.getElementById('respawnBtn');
-const toMenuBtn = document.getElementById('toMenuBtn');
-const volRange = document.getElementById('volRange');
-
-const invUI = document.getElementById('inventoryUI');
-const inventoryGrid = document.getElementById('inventoryGrid');
-const closeInvBtn = document.getElementById('closeInv');
-
-const containerUI = document.getElementById('containerUI');
-const chestGrid = document.getElementById('chestGrid');
-const backpackGrid = document.getElementById('backpackGrid');
-const closeContainerBtn = document.getElementById('closeContainer');
-
-const itemContextMenu = document.getElementById('itemContextMenu');
-const ctxUseBtn = document.getElementById('ctxUseBtn');
-const ctxMoveBtn = document.getElementById('ctxMoveBtn');
-const ctxDropBtn = document.getElementById('ctxDropBtn');
-
-let selectedItemIndex = null;
-let selectedItemSource = null;
-
-const pickupHint = document.getElementById('pickupHint');
-const statsEl = document.getElementById('stats');
-const controlsEl = document.getElementById('controls');
-const hpEl = document.getElementById('hp');
-const energyEl = document.getElementById('energy');
-const intEl = document.getElementById('int');
-const msgEl = document.getElementById('message');
-
-function rnd(min, max) { return Math.random() * (max - min) + min; }
-
-function isInsideHouse(x, y) {
-    return x >= house.x && x <= house.x + house.size && y >= house.y && y <= house.y + house.size;
-}
-
-function collidesWithHouse(x, y, radius) {
-    const hLeft = house.x;
-    const hRight = house.x + house.size;
-    const hTop = house.y;
-    const hBottom = house.y + house.size;
-
-    return (
-        x + radius > hLeft &&
-        x - radius < hRight &&
-        y + radius > hTop &&
-        y - radius < hBottom
-    );
-}
-
-let msgTimeout;
-function msg(t) {
-    msgEl.textContent = t;
-    clearTimeout(msgTimeout);
-    msgTimeout = setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3000);
-}
-
-function saveGame() {
-    const saveData = {
-        player: { x: player.x, y: player.y, hp: player.hp, maxHp: player.maxHp, energy: player.energy, maxEnergy: player.maxEnergy, insideHouse: player.insideHouse },
-        stats: { INT: stats.INT, redKills: stats.redKills, blueKills: stats.blueKills },
-        gameTime: gameTime,
-        flashlightOn: flashlightOn,
-        inventory: inventory,
-        chestInventory: chestInventory,
-        tpPoints: tpPoints,
-        itemsOnMap: itemsOnMap,
-        enemies: enemies.map(en => ({ x: en.x, y: en.y, size: en.size, type: en.type, state: en.state, wanderAngle: en.wanderAngle, wanderTimer: en.wanderTimer, walkCycle: en.walkCycle }))
-    };
-    localStorage.setItem('whisper_save', JSON.stringify(saveData));
-    msg('Гру збережено!');
-}
-
-function loadGame() {
-    const saveData = JSON.parse(localStorage.getItem('whisper_save'));
-    if (!saveData) return false;
-
-    player.x = saveData.player.x;
-    player.y = saveData.player.y;
-    player.targetX = player.x;
-    player.targetY = player.y;
-    player.hp = saveData.player.hp;
-    player.maxHp = saveData.player.maxHp;
-    player.energy = saveData.player.energy !== undefined ? saveData.player.energy : 100;
-    player.maxEnergy = saveData.player.maxEnergy !== undefined ? saveData.player.maxEnergy : 100;
-    player.insideHouse = saveData.player.insideHouse || false;
-
-    stats.INT = saveData.stats.INT;
-    stats.redKills = saveData.stats.redKills;
-    stats.blueKills = saveData.stats.blueKills;
-
-    gameTime = saveData.gameTime || 0;
-    flashlightOn = saveData.flashlightOn || false;
-    inventory = saveData.inventory || [];
-    chestInventory = saveData.chestInventory || [];
-    tpPoints = saveData.tpPoints || [];
-    itemsOnMap = saveData.itemsOnMap || [];
-    enemies = saveData.enemies.map(en => ({
-        x: en.x, y: en.y, size: en.size, type: en.type, state: en.state,
-        wanderAngle: en.wanderAngle || 0, wanderTimer: en.wanderTimer || 0,
-        walkCycle: en.walkCycle || 0, trail: []
-    }));
-    return true;
-}
-
-function deleteSave() { localStorage.removeItem('whisper_save'); }
-function hasSave() { return localStorage.getItem('whisper_save') !== null; }
-
-function spawnEnemy() {
-    let ex, ey, type;
-    let attempts = 0;
-    const size = 30;
-    do {
-        const angle = rnd(0, Math.PI * 2);
-        const dist = rnd(450, 950);
-        type = Math.random() < 0.5 ? 'red' : 'blue';
-        ex = player.x + Math.cos(angle) * dist;
-        ey = player.y + Math.sin(angle) * dist;
-        attempts++;
-    } while (collidesWithHouse(ex, ey, size / 2) && attempts < 30);
-
-    if (collidesWithHouse(ex, ey, size / 2)) {
-        ex = house.x + house.size + 150;
-        ey = house.y + house.size + 150;
-    }
-
-    enemies.push({
-        x: ex,
-        y: ey,
-        size: type === 'red' ? 30 : 28,
-        type: type,
-        state: 'idle',
-        wanderAngle: rnd(0, Math.PI * 2),
-        wanderTimer: 0,
-        walkCycle: rnd(0, 100),
-        trail: []
-    });
-}
-
-function spawnLoop() {
-    if (Date.now() - lastSpawn > 5000 && enemies.length < 15) {
-        spawnEnemy();
-        lastSpawn = Date.now();
-    }
-
-    if (Date.now() - lastItemSpawn > 4000 && itemsOnMap.length < 40) {
-        const angle = rnd(0, Math.PI * 2);
-        const dist = rnd(600, 1200);
-        spawnItemAt(player.x + Math.cos(angle) * dist, player.y + Math.sin(angle) * dist);
-        lastItemSpawn = Date.now();
-    }
-}
-
-function spawnItemAt(x, y) {
-    let ix = x, iy = y;
-    let attempts = 0;
-    while (isInsideHouse(ix, iy) && attempts < 20) {
-        const angle = rnd(0, Math.PI * 2);
-        const dist = rnd(600, 1200);
-        ix = player.x + Math.cos(angle) * dist;
-        iy = player.y + Math.sin(angle) * dist;
-        attempts++;
-    }
-    if (isInsideHouse(ix, iy)) {
-        ix += house.size + 100;
-    }
-
-    const rand = Math.random();
-    let type = 'apple', name = 'Яблуко', desc = '+10% Енергії', regenType = 'energy', regenVal = 10;
-
-    if (rand < 0.25) { type = 'apple'; name = 'Яблуко'; desc = '+10% Енергії'; regenType = 'energy'; regenVal = 10; }
-    else if (rand < 0.50) { type = 'water'; name = 'Вода'; desc = '+5% Енергії'; regenType = 'energy'; regenVal = 5; }
-    else if (rand < 0.70) { type = 'sandwich'; name = 'Бутерброд'; desc = '+15% Енергії'; regenType = 'energy'; regenVal = 15; }
-    else if (rand < 0.85) { type = 'meat'; name = 'М\'ясо'; desc = '+20% Енергії'; regenType = 'energy'; regenVal = 20; }
-    else if (rand < 0.95) { type = 'bandage'; name = 'Бінт'; desc = '+20 HP'; regenType = 'hp'; regenVal = 20; }
-    else { type = 'medkit'; name = 'Аптечка'; desc = '+50 HP'; regenType = 'hp'; regenVal = 50; }
-
-    itemsOnMap.push({ x: ix, y: iy, type: type, name: name, desc: desc, regenType: regenType, regenVal: regenVal });
-}
-
-function scream(mx, my) {
-    if (player.insideHouse) {
-        msg("✖ Атака в домі заблокована!");
-        return;
-    }
-    if (!flashlightOn) {
-        msg("✖ Крик доступний тільки коли ліхтарик увімкнено!");
-        return;
-    }
-    if (screamCooldown > 0) {
-        msg(`Крик перезаряджається (${Math.ceil(screamCooldown)}с)`);
-        return;
-    }
-    if (player.energy < 10) {
-        msg("✖ Недостатньо енергії для крику (потрібно 10%)!");
-        player.energy = 0;
-        updateStatsUI();
-        return;
-    }
-
-    player.energy -= 10;
-    updateStatsUI();
-
-    const worldX = mx - canvas.width / 2 + player.x;
-    const worldY = my - canvas.height / 2 + player.y;
-
-    playScream();
-    screamCooldown = COOLDOWN.scream;
-
-    screamEffect = { x: worldX, y: worldY, radius: 20, maxRadius: 350, alpha: 0.8 };
-
-    let scaredAny = false;
-    enemies.forEach(en => {
-        const d = Math.hypot(worldX - en.x, worldY - en.y);
-        if (en.type === 'red' && d < 280 && en.state !== 'scared') {
-            en.state = 'scared';
-            scaredAny = true;
-        }
-    });
-    if (scaredAny) msg("Крик налякав червоних! (-10% енергії)");
-    else msg("Крик не знайшов червоних поруч... (-10% енергії)");
-}
-
-function useLighter(mx, my) {
-    if (player.insideHouse) {
-        msg("✖ Атака в домі заблокована!");
-        return;
-    }
-    if (flashlightOn) {
-        msg("✖ Запальничка доступна тільки коли ліхтарик вимкнено!");
-        return;
-    }
-    if (lighterCooldown > 0) {
-        msg(`Запальничка перезаряджається (${Math.ceil(lighterCooldown)}с)`);
-        return;
-    }
-    if (player.energy < 5) {
-        msg("✖ Недостатньо енергії для удару!");
-        player.energy = 0;
-        updateStatsUI();
-        return;
-    }
-
-    player.energy -= 5;
-    updateStatsUI();
-
-    if (lighterActive) return;
-
-    const worldX = mx - canvas.width / 2 + player.x;
-    const worldY = my - canvas.height / 2 + player.y;
-
-    lighterActive = true;
-    lighterTimer = Date.now();
-    lighterCooldown = COOLDOWN.lighter;
-    playLighter();
-
-    const angle = Math.atan2(worldY - player.y, worldX - player.x);
-    lighterEffect = { x: player.x, y: player.y, angle: angle, length: 200, alpha: 1 };
-
-    let affected = false;
-    enemies.forEach(en => {
-        const d = Math.hypot(worldX - en.x, worldY - en.y);
-        if (en.type === 'blue' && d < 220 && en.state !== 'scared') {
-            en.state = 'scared';
-            affected = true;
-        }
-    });
-    if (affected) msg("Запальничка відлякала синіх!");
-    else msg("Запальничка: нікого поруч.");
-}
-
-function handleEnemyDeath(en) {
-    playDeath();
-    stats.INT += 1;
-
-    if (en.type === 'red') stats.redKills++;
-    if (en.type === 'blue') stats.blueKills++;
-
-    if (!cheatsEnabled) {
-        const currentTotal = stats.redKills + stats.blueKills;
-        if (currentTotal > stats.bestMatchKills) stats.bestMatchKills = currentTotal;
-        if (stats.redKills > stats.bestRedKills) stats.bestRedKills = stats.redKills;
-        if (stats.blueKills > stats.bestBlueKills) stats.bestBlueKills = stats.blueKills;
-        if (gameTime > stats.bestTime) stats.bestTime = gameTime;
-    }
-
-    saveRecords();
-    updateHomeUI();
-}
-
-function updateEnemies() {
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        const en = enemies[i];
-        if (en.state === 'dead') continue;
-
-        if (!en.walkCycle) en.walkCycle = 0;
-        en.walkCycle += 0.25;
-
-        if (!en.trail) en.trail = [];
-        en.trail.unshift({ x: en.x, y: en.y });
-        if (en.trail.length > 8) en.trail.pop();
-
-        const radius = en.size / 2;
-
-        if (collidesWithHouse(en.x, en.y, radius)) {
-            const distToLeft = Math.abs(en.x - house.x);
-            const distToRight = Math.abs(en.x - (house.x + house.size));
-            const distToTop = Math.abs(en.y - house.y);
-            const distToBottom = Math.abs(en.y - (house.y + house.size));
-            const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
-
-            if (minDist === distToTop) en.y = house.y - radius - 2;
-            else if (minDist === distToBottom) en.y = house.y + house.size + radius + 2;
-            else if (minDist === distToLeft) en.x = house.x - radius - 2;
-            else en.x = house.x + house.size + radius + 2;
+        let soundSettings = {
+            interface: parseFloat(localStorage.getItem('whisper_interface_vol') ?? '0.7'),
+            music: parseFloat(localStorage.getItem('whisper_music_vol') ?? '0.5')
+        };
+
+        let compassEnabled = localStorage.getItem('whisper_compass_enabled') !== 'false';
+        let minimapEnabled = localStorage.getItem('whisper_minimap_enabled') !== 'false';
+
+        const bgMusic = document.getElementById('bgMusic');
+        bgMusic.volume = soundSettings.music;
+
+        function saveSoundSettings() {
+            localStorage.setItem('whisper_interface_vol', soundSettings.interface);
+            localStorage.setItem('whisper_music_vol', soundSettings.music);
         }
 
-        const dx = player.x - en.x;
-        const dy = player.y - en.y;
-        const d = Math.hypot(dx, dy);
+        let audioCtx = null;
 
-        if (player.insideHouse) {
-            en.state = 'idle';
-            en.wanderTimer++;
-            if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
-                en.wanderAngle = rnd(0, Math.PI * 2);
-                en.wanderTimer = 0;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            const speed = 0.5 + rnd(0, 0.5);
-            let nx = en.x + Math.cos(en.wanderAngle) * speed;
-            let ny = en.y + Math.sin(en.wanderAngle) * speed;
-            
-            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
-            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
-        } else {
-            if (en.type === 'red') {
-                if (!flashlightOn) {
-                    en.state = 'idle';
-                    en.wanderTimer++;
-                    if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
-                        en.wanderAngle = rnd(0, Math.PI * 2);
-                        en.wanderTimer = 0;
-                    }
-                    const speed = 0.5 + rnd(0, 0.5);
-                    let nx = en.x + Math.cos(en.wanderAngle) * speed;
-                    let ny = en.y + Math.sin(en.wanderAngle) * speed;
-                    
-                    if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
-                    if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
-                } else {
-                    if (en.state !== 'scared') {
-                        en.state = 'chasing';
-                        if (d > 1) {
-                            const swayAngle = Math.atan2(dy, dx) + Math.sin(en.walkCycle * 0.3) * 0.25;
-                            let nx = en.x + Math.cos(swayAngle) * 0.85;
-                            let ny = en.y + Math.sin(swayAngle) * 0.85;
-                            
-                            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
-                            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
-                        }
-                    }
-                    if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !cheatsEnabled) {
-                        player.hp -= 0.35;
-                        if (player.hp <= 0) die("Червоний привид загриз тебе на світлі!");
-                    }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            if (bgMusic.paused) {
+                bgMusic.play().catch(e => {});
+            }
+            return audioCtx;
+        }
+
+        // ===== ЗВУКИ (WEB AUDIO API) =====
+
+        const MenuSounds = {
+            playHover: () => {
+                if (soundSettings.interface <= 0) return;
+                try {
+                    const ctx = initAudio();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(120, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.05);
+                    gain.gain.setValueAtTime(0.03 * soundSettings.interface, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.05);
+                } catch (e) {}
+            },
+            playClick: () => {
+                if (soundSettings.interface <= 0) return;
+                try {
+                    const ctx = initAudio();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.15 * soundSettings.interface, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                } catch (e) {}
+            }
+        };
+
+        function playToggle() {
+            if (soundSettings.interface <= 0) return;
+            try {
+                const ctx = initAudio();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, ctx.currentTime);
+                osc.frequency.setValueAtTime(200, ctx.currentTime + 0.03);
+                gain.gain.setValueAtTime(0.2 * soundSettings.interface, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.08);
+            } catch (e) {}
+        }
+
+        function playScream() {
+            if (soundSettings.interface <= 0) return;
+            try {
+                const ctx = initAudio();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(450, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(220, ctx.currentTime + 0.3);
+                osc.frequency.linearRampToValueAtTime(350, ctx.currentTime + 0.5);
+                
+                gain.gain.setValueAtTime(0.35 * soundSettings.interface, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.55);
+            } catch (e) {}
+        }
+
+        function playLighter() {
+            if (soundSettings.interface <= 0) return;
+            try {
+                const ctx = initAudio();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1200, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.2 * soundSettings.interface, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+
+                const bufferSize = ctx.sampleRate * 0.2;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
                 }
-            }
-
-            if (en.type === 'blue') {
-                if (flashlightOn) {
-                    en.state = 'idle';
-                    en.wanderTimer++;
-                    if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
-                        en.wanderAngle = rnd(0, Math.PI * 2);
-                        en.wanderTimer = 0;
-                    }
-                    const speed = 0.5 + rnd(0, 0.5);
-                    let nx = en.x + Math.cos(en.wanderAngle) * speed;
-                    let ny = en.y + Math.sin(en.wanderAngle) * speed;
-                    
-                    if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
-                    if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
-                } else {
-                    if (en.state !== 'scared') {
-                        en.state = 'chasing';
-                        if (d > 1) {
-                            const swayAngle = Math.atan2(dy, dx) + Math.cos(en.walkCycle * 0.3) * 0.25;
-                            let nx = en.x + Math.cos(swayAngle) * 1.0;
-                            let ny = en.y + Math.sin(swayAngle) * 1.0;
-                            
-                            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
-                            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
-                        }
-                    }
-                    if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !lighterActive && !cheatsEnabled) {
-                        player.hp -= 0.35;
-                        if (player.hp <= 0) die("Синій монстр розірвав тебе у темряві!");
-                    }
-                }
-            }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 800;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.15 * soundSettings.interface, ctx.currentTime + 0.05);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+                
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                noise.start(ctx.currentTime + 0.05);
+            } catch (e) {}
         }
 
-        if (en.state === 'scared') {
-            en.y -= 4;
-            if (en.y < player.y - 600) {
-                en.state = 'dead';
-                handleEnemyDeath(en);
-            }
+        function playEnemyDeath() {
+            if (soundSettings.interface <= 0) return;
+            try {
+                const ctx = initAudio();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.6);
+                
+                gain.gain.setValueAtTime(0.3 * soundSettings.interface, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.6);
+            } catch (e) {}
         }
-    }
 
-    for (let j = enemies.length - 1; j >= 0; j--) {
-        if (enemies[j].state === 'dead') enemies.splice(j, 1);
-    }
-}
+        function playDeath() {
+            if (soundSettings.interface <= 0) return;
+            try {
+                const ctx = initAudio();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.8);
+                gain.gain.setValueAtTime(0.4 * soundSettings.interface, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.8);
+            } catch (e) {}
+        }
 
-function updatePlayerPosition() {
-    let isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'] || 
-                   keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+        function setupButtonSounds() {
+            const allButtons = document.querySelectorAll('.menu-btn, #closeInv, #closeContainer, #closeTpBtn, #signature, #closeRulesBtn, #closeEulaBtn, #resumeBtn, #pauseSettingsBtn, #saveExitBtn, #respawnBtn, #toMenuBtn, #cheatBtn, #rulesBtn, #backBtn, #soundSettingsMenuBtn, #closeSoundSettingsBtn');
+            allButtons.forEach(btn => {
+                btn.addEventListener('mouseenter', () => { MenuSounds.playHover(); });
+                btn.addEventListener('click', () => { MenuSounds.playClick(); });
+            });
+        }
 
-    if (player.energy <= 0) isMoving = false;
+        // ===== ЗМІННІ ГРИ =====
+        const canvas = document.getElementById('game');
+        const ctx2 = canvas.getContext('2d');
+        canvas.width = innerWidth;
+        canvas.height = innerHeight;
 
-    if (isMoving) {
-        player.walkCycle += 0.25;
-        let nextX = player.targetX;
-        let nextY = player.targetY;
+        const compassHud = document.getElementById('compassHud');
+        const compassCanvas = document.getElementById('compassCanvas');
+        const compassCtx = compassCanvas.getContext('2d');
+        const compassDistanceEl = document.getElementById('compassDistance');
 
-        if (keys['w'] || keys['ArrowUp']) nextY -= player.speed;
-        if (keys['s'] || keys['ArrowDown']) nextY += player.speed;
-        if (keys['a'] || keys['ArrowLeft']) nextX -= player.speed;
-        if (keys['d'] || keys['ArrowRight']) nextX += player.speed;
+        const minimapHud = document.getElementById('minimapHud');
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
 
-        const pHalf = player.size / 2;
-        const hLeft = house.x;
-        const hRight = house.x + house.size;
-        const hTop = house.y;
-        const hBottom = house.y + house.size;
+        window.addEventListener('resize', () => {
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+        });
 
-        if (player.insideHouse) {
-            if (nextX - pHalf >= hLeft && nextX + pHalf <= hRight) player.targetX = nextX;
-            if (nextY - pHalf >= hTop && nextY + pHalf <= hBottom) player.targetY = nextY;
-        } else {
-            const collidesWithBox = (px, py) => {
-                return px + pHalf > hLeft && px - pHalf < hRight &&
-                       py + pHalf > hTop && py - pHalf < hBottom;
+        window.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+
+        function formatGameTime(totalSeconds) {
+            if (totalSeconds < 60) return `${totalSeconds} сек`;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return seconds > 0 ? `${minutes} хв ${seconds} сек` : `${minutes} хв`;
+        }
+
+        let gameState = 'menu';
+        let previousState = 'menu';
+        let cheatsEnabled = false;
+
+        const player = {
+            x: 0, y: 0, targetX: 0, targetY: 0,
+            size: 24, speed: 4, hp: 100, maxHp: 100,
+            energy: 100, maxEnergy: 100, insideHouse: false, walkCycle: 0
+        };
+
+        const house = { x: 200, y: -180, size: 360, color: '#8b5a2b' };
+        const door = { x: house.x + house.size / 2 - 25, y: house.y - 6, width: 50, height: 12, color: '#7f8c8d' };
+        const chest = { x: house.x + 60, y: house.y + 60, size: 30, color: '#ffd700' };
+
+        let tpPoints = [null, null, null, null, null];
+        let selectedTpIndex = null;
+
+        let mouseX = 0, mouseY = 0;
+        const stats = { INT: 0, redKills: 0, blueKills: 0, bestMatchKills: 0, bestRedKills: 0, bestBlueKills: 0, bestTime: 0 };
+
+        let gameTime = 0;
+        let gameTimeInterval = null;
+        let isGameActive = false;
+
+        const COOLDOWN = { scream: 5, lighter: 5 };
+        let screamCooldown = 0, lighterCooldown = 0;
+        let lastTimestamp = 0;
+        let screamEffect = null, lighterEffect = null;
+
+        const recBestMatchEl = document.getElementById('recBestMatch');
+        const recRedEl = document.getElementById('recRed');
+        const recBlueEl = document.getElementById('recBlue');
+        const recTimeEl = document.getElementById('recTime');
+        const screamCdEl = document.getElementById('screamCd');
+        const lighterCdEl = document.getElementById('lighterCd');
+        const cheatBtn = document.getElementById('cheatBtn');
+        const gameTimeEl = document.getElementById('gameTime');
+
+        function loadRecords() {
+            stats.bestRedKills = parseInt(localStorage.getItem('whisper_best_red') || '0', 10);
+            stats.bestBlueKills = parseInt(localStorage.getItem('whisper_best_blue') || '0', 10);
+            stats.bestMatchKills = parseInt(localStorage.getItem('whisper_best_match') || '0', 10);
+            stats.bestTime = parseInt(localStorage.getItem('whisper_best_time') || '0', 10);
+            updateHomeUI();
+        }
+
+        function saveRecords() {
+            if (cheatsEnabled) return;
+            localStorage.setItem('whisper_best_red', stats.bestRedKills);
+            localStorage.setItem('whisper_best_blue', stats.bestBlueKills);
+            localStorage.setItem('whisper_best_match', stats.bestMatchKills);
+            localStorage.setItem('whisper_best_time', stats.bestTime);
+            updateHomeUI();
+        }
+
+        function updateHomeUI() {
+            recBestMatchEl.textContent = stats.bestMatchKills;
+            recRedEl.textContent = stats.bestRedKills;
+            recBlueEl.textContent = stats.bestBlueKills;
+            recTimeEl.textContent = formatGameTime(stats.bestTime);
+        }
+
+        loadRecords();
+
+        let keys = {};
+        function clearKeys() { keys = {}; }
+
+        let flashlightOn = false;
+        let lighterActive = false;
+        let lighterTimer = 0;
+
+        let inventory = [];
+        const MAX_INVENTORY_SIZE = 20;
+        let chestInventory = [];
+        const MAX_CHEST_SIZE = 30;
+
+        let itemsOnMap = [];
+        let enemies = [];
+        let lastSpawn = Date.now();
+        let lastItemSpawn = Date.now();
+
+        const menuScreen = document.getElementById('menuScreen');
+        const settingsUI = document.getElementById('settingsUI');
+        const soundSettingsUI = document.getElementById('soundSettingsUI');
+        const rulesUI = document.getElementById('rulesUI');
+        const eulaUI = document.getElementById('eulaUI');
+        const pauseUI = document.getElementById('pauseUI');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const deathReasonEl = document.getElementById('deathReason');
+        const cooldownHud = document.getElementById('cooldownHud');
+
+        const playBtn = document.getElementById('playBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const soundSettingsMenuBtn = document.getElementById('soundSettingsMenuBtn');
+        const closeSoundSettingsBtn = document.getElementById('closeSoundSettingsBtn');
+        const rulesBtn = document.getElementById('rulesBtn');
+        const closeRulesBtn = document.getElementById('closeRulesBtn');
+        const signatureEl = document.getElementById('signature');
+        const closeEulaBtn = document.getElementById('closeEulaBtn');
+        const backBtn = document.getElementById('backBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const pauseSettingsBtn = document.getElementById('pauseSettingsBtn');
+        const saveExitBtn = document.getElementById('saveExitBtn');
+        const respawnBtn = document.getElementById('respawnBtn');
+        const toMenuBtn = document.getElementById('toMenuBtn');
+
+        const interfaceVolRange = document.getElementById('interfaceVolRange');
+        interfaceVolRange.value = soundSettings.interface;
+
+        const musicVolRange = document.getElementById('musicVolRange');
+        musicVolRange.value = soundSettings.music;
+
+        const invUI = document.getElementById('inventoryUI');
+        const inventoryGrid = document.getElementById('inventoryGrid');
+        const closeInvBtn = document.getElementById('closeInv');
+
+        const tpUI = document.getElementById('tpUI');
+        const tpGrid = document.getElementById('tpGrid');
+        const closeTpBtn = document.getElementById('closeTpBtn');
+
+        const containerUI = document.getElementById('containerUI');
+        const chestGrid = document.getElementById('chestGrid');
+        const backpackGrid = document.getElementById('backpackGrid');
+        const closeContainerBtn = document.getElementById('closeContainer');
+
+        const itemContextMenu = document.getElementById('itemContextMenu');
+        const ctxUseBtn = document.getElementById('ctxUseBtn');
+        const ctxMoveBtn = document.getElementById('ctxMoveBtn');
+        const ctxDropBtn = document.getElementById('ctxDropBtn');
+
+        const tpContextMenu = document.getElementById('tpContextMenu');
+        const ctxTpDeleteBtn = document.getElementById('ctxTpDeleteBtn');
+
+        let selectedItemIndex = null;
+        let selectedItemSource = null;
+
+        const pickupHint = document.getElementById('pickupHint');
+        const statsEl = document.getElementById('stats');
+        const hpEl = document.getElementById('hp');
+        const energyEl = document.getElementById('energy');
+        const intEl = document.getElementById('int');
+        const msgEl = document.getElementById('message');
+
+        function rnd(min, max) { return Math.random() * (max - min) + min; }
+
+        function isInsideHouse(x, y) {
+            return x >= house.x && x <= house.x + house.size && y >= house.y && y <= house.y + house.size;
+        }
+
+        function collidesWithHouse(x, y, radius) {
+            return (
+                x + radius > house.x &&
+                x - radius < house.x + house.size &&
+                y + radius > house.y &&
+                y - radius < house.y + house.size
+            );
+        }
+
+        let msgTimeout;
+        function msg(t) {
+            msgEl.textContent = t;
+            clearTimeout(msgTimeout);
+            msgTimeout = setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3000);
+        }
+
+        function saveGame() {
+            const saveData = {
+                player: { x: player.x, y: player.y, hp: player.hp, maxHp: player.maxHp, energy: player.energy, maxEnergy: player.maxEnergy, insideHouse: player.insideHouse },
+                stats: { INT: stats.INT, redKills: stats.redKills, blueKills: stats.blueKills },
+                gameTime: gameTime,
+                flashlightOn: flashlightOn,
+                compassEnabled: compassEnabled,
+                minimapEnabled: minimapEnabled,
+                inventory: inventory,
+                chestInventory: chestInventory,
+                tpPoints: tpPoints,
+                itemsOnMap: itemsOnMap,
+                enemies: enemies.map(en => ({ x: en.x, y: en.y, size: en.size, type: en.type, state: en.state, wanderAngle: en.wanderAngle, wanderTimer: en.wanderTimer, walkCycle: en.walkCycle }))
             };
-
-            let testXOk = !collidesWithBox(nextX, player.targetY);
-            let testYOk = !collidesWithBox(player.targetX, nextY);
-
-            if (testXOk) player.targetX = nextX;
-            if (testYOk) player.targetY = nextY;
+            localStorage.setItem('whisper_save', JSON.stringify(saveData));
+            msg('Гру збережено!');
         }
-    } else {
-        player.walkCycle = 0;
-    }
 
-    // Більш плавна інтерполяція (Lerp) для м'якого руху без різких ривків
-    player.x += (player.targetX - player.x) * 0.15;
-    player.y += (player.targetY - player.y) * 0.15;
-}
+        function loadGame() {
+            const saveData = JSON.parse(localStorage.getItem('whisper_save'));
+            if (!saveData) return false;
 
-function checkInteractions() {
-    let hintText = '';
-    let canInteract = false;
+            player.x = saveData.player.x;
+            player.y = saveData.player.y;
+            player.targetX = player.x;
+            player.targetY = player.y;
+            player.hp = saveData.player.hp;
+            player.maxHp = saveData.player.maxHp;
+            player.energy = saveData.player.energy !== undefined ? saveData.player.energy : 100;
+            player.maxEnergy = saveData.player.maxEnergy !== undefined ? saveData.player.maxEnergy : 100;
+            player.insideHouse = saveData.player.insideHouse || false;
 
-    const distToDoor = Math.hypot(player.x - (door.x + door.width / 2), player.y - (door.y + door.height / 2));
-    if (distToDoor < 55) {
-        hintText = player.insideHouse ? 'Натисніть E, щоб вийти з дому' : 'Натисніть E, щоб увійти в дім';
-        canInteract = true;
-    }
+            stats.INT = saveData.stats.INT;
+            stats.redKills = saveData.stats.redKills;
+            stats.blueKills = saveData.stats.blueKills;
 
-    const distToChest = Math.hypot(player.x - chest.x, player.y - chest.y);
-    if (distToChest < 45 && player.insideHouse) {
-        hintText = 'Натисніть E, щоб відкрити сундук';
-        canInteract = true;
-    }
-
-    let foundItemIndex = -1;
-    let minDist = 40;
-    for (let i = 0; i < itemsOnMap.length; i++) {
-        const it = itemsOnMap[i];
-        const d = Math.hypot(player.x - it.x, player.y - it.y);
-        if (d < minDist) {
-            minDist = d;
-            foundItemIndex = i;
+            gameTime = saveData.gameTime || 0;
+            flashlightOn = saveData.flashlightOn || false;
+            if (saveData.compassEnabled !== undefined) compassEnabled = saveData.compassEnabled;
+            if (saveData.minimapEnabled !== undefined) minimapEnabled = saveData.minimapEnabled;
+            inventory = saveData.inventory || [];
+            chestInventory = saveData.chestInventory || [];
+            tpPoints = saveData.tpPoints || [null, null, null, null, null];
+            itemsOnMap = saveData.itemsOnMap || [];
+            enemies = saveData.enemies.map(en => ({
+                x: en.x, y: en.y, size: en.size, type: en.type, state: en.state,
+                wanderAngle: en.wanderAngle || 0, wanderTimer: en.wanderTimer || 0,
+                walkCycle: en.walkCycle || 0, trail: []
+            }));
+            return true;
         }
-    }
 
-    if (foundItemIndex !== -1 && !player.insideHouse) {
-        hintText = 'Натисніть E, щоб підібрати предмет';
-        canInteract = true;
-    }
+        function deleteSave() { localStorage.removeItem('whisper_save'); }
+        function hasSave() { return localStorage.getItem('whisper_save') !== null; }
 
-    if (canInteract) {
-        pickupHint.style.display = 'block';
-        pickupHint.textContent = hintText;
+        function spawnEnemy() {
+            let ex, ey, type;
+            let attempts = 0;
+            const size = 30;
+            do {
+                const angle = rnd(0, Math.PI * 2);
+                const dist = rnd(450, 950);
+                type = Math.random() < 0.5 ? 'red' : 'blue';
+                ex = player.x + Math.cos(angle) * dist;
+                ey = player.y + Math.sin(angle) * dist;
+                attempts++;
+            } while (collidesWithHouse(ex, ey, size / 2) && attempts < 30);
 
-        if (keys['e'] || keys['E'] || keys['у'] || keys['У']) {
-            keys['e'] = false; keys['E'] = false; keys['у'] = false; keys['У'] = false;
+            if (collidesWithHouse(ex, ey, size / 2)) {
+                ex = house.x + house.size + 150;
+                ey = house.y + house.size + 150;
+            }
 
-            if (distToChest < 45 && player.insideHouse) {
-                toggleContainer(true);
-            } else if (distToDoor < 55) {
+            enemies.push({
+                x: ex, y: ey,
+                size: type === 'red' ? 30 : 28,
+                type: type, state: 'idle',
+                wanderAngle: rnd(0, Math.PI * 2),
+                wanderTimer: 0, walkCycle: rnd(0, 100), trail: []
+            });
+        }
+
+        function spawnLoop() {
+            if (Date.now() - lastSpawn > 5000 && enemies.length < 15) {
+                spawnEnemy();
+                lastSpawn = Date.now();
+            }
+
+            if (Date.now() - lastItemSpawn > 4000 && itemsOnMap.length < 40) {
+                const angle = rnd(0, Math.PI * 2);
+                const dist = rnd(600, 1200);
+                spawnItemAt(player.x + Math.cos(angle) * dist, player.y + Math.sin(angle) * dist);
+                lastItemSpawn = Date.now();
+            }
+        }
+
+        function spawnItemAt(x, y) {
+            let ix = x, iy = y;
+            let attempts = 0;
+            while (isInsideHouse(ix, iy) && attempts < 20) {
+                const angle = rnd(0, Math.PI * 2);
+                const dist = rnd(600, 1200);
+                ix = player.x + Math.cos(angle) * dist;
+                iy = player.y + Math.sin(angle) * dist;
+                attempts++;
+            }
+            if (isInsideHouse(ix, iy)) { ix += house.size + 100; }
+
+            const rand = Math.random();
+            let type = 'apple', name = 'Яблуко', desc = '+10% Енергії', regenType = 'energy', regenVal = 10;
+
+            if (rand < 0.25) { type = 'apple'; name = 'Яблуко'; desc = '+10% Енергії'; regenType = 'energy'; regenVal = 10; }
+            else if (rand < 0.50) { type = 'water'; name = 'Вода'; desc = '+5% Енергії'; regenType = 'energy'; regenVal = 5; }
+            else if (rand < 0.70) { type = 'sandwich'; name = 'Бутерброд'; desc = '+15% Енергії'; regenType = 'energy'; regenVal = 15; }
+            else if (rand < 0.85) { type = 'meat'; name = 'М\'ясо'; desc = '+20% Енергії'; regenType = 'energy'; regenVal = 20; }
+            else if (rand < 0.95) { type = 'bandage'; name = 'Бінт'; desc = '+20 HP'; regenType = 'hp'; regenVal = 20; }
+            else { type = 'medkit'; name = 'Аптечка'; desc = '+50 HP'; regenType = 'hp'; regenVal = 50; }
+
+            itemsOnMap.push({ x: ix, y: iy, type: type, name: name, desc: desc, regenType: regenType, regenVal: regenVal });
+        }
+
+        function scream(mx, my) {
+            if (player.insideHouse) { msg("✖ Атака в домі заблокована!"); return; }
+            if (!flashlightOn) { msg("✖ Крик доступний тільки коли ліхтарик увімкнено!"); return; }
+            if (screamCooldown > 0) { msg(`Крик перезаряджається (${Math.ceil(screamCooldown)}с)`); return; }
+            if (player.energy < 10) {
+                msg("✖ Недостатньо енергії для крику (потрібно 10%)!");
+                player.energy = 0;
+                updateStatsUI();
+                return;
+            }
+
+            player.energy -= 10;
+            updateStatsUI();
+
+            const worldX = mx - canvas.width / 2 + player.x;
+            const worldY = my - canvas.height / 2 + player.y;
+
+            playScream();
+            screamCooldown = COOLDOWN.scream;
+            screamEffect = { x: worldX, y: worldY, radius: 20, maxRadius: 350, alpha: 0.8 };
+
+            let scaredAny = false;
+            enemies.forEach(en => {
+                const d = Math.hypot(worldX - en.x, worldY - en.y);
+                if (en.type === 'red' && d < 280 && en.state !== 'scared') {
+                    en.state = 'scared';
+                    scaredAny = true;
+                }
+            });
+            if (scaredAny) msg("Крик налякав червоних! (-10% енергії)");
+            else msg("Крик не знайшов червоних поруч... (-10% енергії)");
+        }
+
+        function useLighter(mx, my) {
+            if (player.insideHouse) { msg("✖ Атака в домі заблокована!"); return; }
+            if (flashlightOn) { msg("✖ Запальничка доступна тільки коли ліхтарик вимкнено!"); return; }
+            if (lighterCooldown > 0) { msg(`Запальничка перезаряджається (${Math.ceil(lighterCooldown)}с)`); return; }
+            if (player.energy < 5) {
+                msg("✖ Недостатньо енергії для удару!");
+                player.energy = 0;
+                updateStatsUI();
+                return;
+            }
+
+            player.energy -= 5;
+            updateStatsUI();
+            if (lighterActive) return;
+
+            const worldX = mx - canvas.width / 2 + player.x;
+            const worldY = my - canvas.height / 2 + player.y;
+
+            lighterActive = true;
+            lighterTimer = Date.now();
+            lighterCooldown = COOLDOWN.lighter;
+            playLighter();
+
+            const angle = Math.atan2(worldY - player.y, worldX - player.x);
+            lighterEffect = { x: player.x, y: player.y, angle: angle, length: 200, alpha: 1 };
+
+            let affected = false;
+            enemies.forEach(en => {
+                const d = Math.hypot(worldX - en.x, worldY - en.y);
+                if (en.type === 'blue' && d < 220 && en.state !== 'scared') {
+                    en.state = 'scared';
+                    affected = true;
+                }
+            });
+            if (affected) msg("Запальничка відлякала синіх!");
+            else msg("Запальничка: нікого поруч.");
+        }
+
+        function handleEnemyDeath(en) {
+            playEnemyDeath();
+            stats.INT += 1;
+            if (en.type === 'red') stats.redKills++;
+            if (en.type === 'blue') stats.blueKills++;
+
+            if (!cheatsEnabled) {
+                const currentTotal = stats.redKills + stats.blueKills;
+                if (currentTotal > stats.bestMatchKills) stats.bestMatchKills = currentTotal;
+                if (stats.redKills > stats.bestRedKills) stats.bestRedKills = stats.redKills;
+                if (stats.blueKills > stats.bestBlueKills) stats.bestBlueKills = stats.blueKills;
+                if (gameTime > stats.bestTime) stats.bestTime = gameTime;
+            }
+
+            saveRecords();
+            updateHomeUI();
+        }
+
+        function updateEnemies() {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const en = enemies[i];
+                if (en.state === 'dead') continue;
+
+                if (!en.walkCycle) en.walkCycle = 0;
+                en.walkCycle += 0.25;
+
+                if (!en.trail) en.trail = [];
+                en.trail.unshift({ x: en.x, y: en.y });
+                if (en.trail.length > 8) en.trail.pop();
+
+                const radius = en.size / 2;
+                if (collidesWithHouse(en.x, en.y, radius)) {
+                    const distToLeft = Math.abs(en.x - house.x);
+                    const distToRight = Math.abs(en.x - (house.x + house.size));
+                    const distToTop = Math.abs(en.y - house.y);
+                    const distToBottom = Math.abs(en.y - (house.y + house.size));
+                    const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+
+                    if (minDist === distToTop) en.y = house.y - radius - 2;
+                    else if (minDist === distToBottom) en.y = house.y + house.size + radius + 2;
+                    else if (minDist === distToLeft) en.x = house.x - radius - 2;
+                    else en.x = house.x + house.size + radius + 2;
+                }
+
+                const dx = player.x - en.x;
+                const dy = player.y - en.y;
+                const d = Math.hypot(dx, dy);
+
                 if (player.insideHouse) {
-                    player.targetX = door.x + door.width / 2;
-                    player.targetY = door.y - player.size / 2 - 2;
-                    player.x = player.targetX; player.y = player.targetY;
-                    player.insideHouse = false;
-                    msg("Ви вийшли з дому");
+                    en.state = 'idle';
+                    en.wanderTimer++;
+                    if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
+                        en.wanderAngle = rnd(0, Math.PI * 2);
+                        en.wanderTimer = 0;
+                    }
+                    const speed = 0.5 + rnd(0, 0.5);
+                    let nx = en.x + Math.cos(en.wanderAngle) * speed;
+                    let ny = en.y + Math.sin(en.wanderAngle) * speed;
+
+                    if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                    if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
                 } else {
-                    player.targetX = door.x + door.width / 2;
-                    player.targetY = door.y + door.height + player.size / 2 + 2;
-                    player.x = player.targetX; player.y = player.targetY;
-                    player.insideHouse = true;
-                    msg("Ви зайшли в дім");
+                    if (en.type === 'red') {
+                        if (!flashlightOn) {
+                            en.state = 'idle';
+                            en.wanderTimer++;
+                            if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
+                                en.wanderAngle = rnd(0, Math.PI * 2);
+                                en.wanderTimer = 0;
+                            }
+                            const speed = 0.5 + rnd(0, 0.5);
+                            let nx = en.x + Math.cos(en.wanderAngle) * speed;
+                            let ny = en.y + Math.sin(en.wanderAngle) * speed;
+
+                            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                        } else {
+                            if (en.state !== 'scared') {
+                                en.state = 'chasing';
+                                if (d > 1) {
+                                    const swayAngle = Math.atan2(dy, dx) + Math.sin(en.walkCycle * 0.3) * 0.25;
+                                    let nx = en.x + Math.cos(swayAngle) * 0.85;
+                                    let ny = en.y + Math.sin(swayAngle) * 0.85;
+
+                                    if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                                    if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                                }
+                            }
+                            if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !cheatsEnabled) {
+                                player.hp -= 0.35;
+                                if (player.hp <= 0) die("Червоний привид загриз тебе на світлі!");
+                            }
+                        }
+                    }
+
+                    if (en.type === 'blue') {
+                        if (flashlightOn) {
+                            en.state = 'idle';
+                            en.wanderTimer++;
+                            if (en.wanderTimer > 60 + Math.floor(rnd(0, 60))) {
+                                en.wanderAngle = rnd(0, Math.PI * 2);
+                                en.wanderTimer = 0;
+                            }
+                            const speed = 0.5 + rnd(0, 0.5);
+                            let nx = en.x + Math.cos(en.wanderAngle) * speed;
+                            let ny = en.y + Math.sin(en.wanderAngle) * speed;
+
+                            if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                            if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                        } else {
+                            if (en.state !== 'scared') {
+                                en.state = 'chasing';
+                                if (d > 1) {
+                                    const swayAngle = Math.atan2(dy, dx) + Math.cos(en.walkCycle * 0.3) * 0.25;
+                                    let nx = en.x + Math.cos(swayAngle) * 1.0;
+                                    let ny = en.y + Math.sin(swayAngle) * 1.0;
+
+                                    if (!collidesWithHouse(nx, en.y, radius)) en.x = nx;
+                                    if (!collidesWithHouse(en.x, ny, radius)) en.y = ny;
+                                }
+                            }
+                            if (d < (player.size + en.size) / 2 && en.state !== 'scared' && !lighterActive && !cheatsEnabled) {
+                                player.hp -= 0.35;
+                                if (player.hp <= 0) die("Синій монстр розірвав тебе у темряві!");
+                            }
+                        }
+                    }
                 }
-            } else if (foundItemIndex !== -1 && !player.insideHouse) {
-                if (inventory.length >= MAX_INVENTORY_SIZE) {
-                    msg("Рюкзак забитий!");
+
+                if (en.state === 'scared') {
+                    en.y -= 4;
+                    if (en.y < player.y - 600) {
+                        en.state = 'dead';
+                        handleEnemyDeath(en);
+                    }
+                }
+            }
+
+            for (let j = enemies.length - 1; j >= 0; j--) {
+                if (enemies[j].state === 'dead') enemies.splice(j, 1);
+            }
+        }
+
+        function updatePlayerPosition() {
+            let isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
+                keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+
+            if (player.energy <= 0) isMoving = false;
+
+            if (isMoving) {
+                player.walkCycle += 0.25;
+                let nextX = player.targetX;
+                let nextY = player.targetY;
+
+                if (keys['w'] || keys['ArrowUp']) nextY -= player.speed;
+                if (keys['s'] || keys['ArrowDown']) nextY += player.speed;
+                if (keys['a'] || keys['ArrowLeft']) nextX -= player.speed;
+                if (keys['d'] || keys['ArrowRight']) nextX += player.speed;
+
+                const pHalf = player.size / 2;
+                if (player.insideHouse) {
+                    if (nextX - pHalf >= house.x && nextX + pHalf <= house.x + house.size) player.targetX = nextX;
+                    if (nextY - pHalf >= house.y && nextY + pHalf <= house.y + house.size) player.targetY = nextY;
                 } else {
-                    const it = itemsOnMap[foundItemIndex];
-                    inventory.push({ 
-                        id: Date.now() + Math.random(), 
-                        name: it.name, 
-                        type: it.type, 
-                        desc: it.desc,
-                        regenType: it.regenType,
-                        regenVal: it.regenVal 
+                    const collidesWithBox = (px, py) => {
+                        return px + pHalf > house.x && px - pHalf < house.x + house.size &&
+                            py + pHalf > house.y && py - pHalf < house.y + house.size;
+                    };
+
+                    let testXOk = !collidesWithBox(nextX, player.targetY);
+                    let testYOk = !collidesWithBox(player.targetX, nextY);
+
+                    if (testXOk) player.targetX = nextX;
+                    if (testYOk) player.targetY = nextY;
+                }
+            } else {
+                player.walkCycle = 0;
+            }
+
+            player.x += (player.targetX - player.x) * 0.15;
+            player.y += (player.targetY - player.y) * 0.15;
+        }
+
+        function checkInteractions() {
+            let hintText = '';
+            let canInteract = false;
+
+            const distToDoor = Math.hypot(player.x - (door.x + door.width / 2), player.y - (door.y + door.height / 2));
+            if (distToDoor < 55) {
+                hintText = player.insideHouse ? 'Натисніть E, щоб вийти з дому' : 'Натисніть E, щоб увійти в дім';
+                canInteract = true;
+            }
+
+            const distToChest = Math.hypot(player.x - chest.x, player.y - chest.y);
+            if (distToChest < 45 && player.insideHouse) {
+                hintText = 'Натисніть E, щоб відкрити сундук';
+                canInteract = true;
+            }
+
+            let foundItemIndex = -1;
+            let minDist = 40;
+            for (let i = 0; i < itemsOnMap.length; i++) {
+                const it = itemsOnMap[i];
+                const d = Math.hypot(player.x - it.x, player.y - it.y);
+                if (d < minDist) {
+                    minDist = d;
+                    foundItemIndex = i;
+                }
+            }
+
+            if (foundItemIndex !== -1 && !player.insideHouse) {
+                hintText = 'Натисніть E, щоб підібрати предмет';
+                canInteract = true;
+            }
+
+            if (canInteract) {
+                pickupHint.style.display = 'block';
+                pickupHint.textContent = hintText;
+
+                if (keys['e'] || keys['E'] || keys['у'] || keys['У']) {
+                    keys['e'] = false; keys['E'] = false; keys['у'] = false; keys['У'] = false;
+
+                    if (distToChest < 45 && player.insideHouse) {
+                        toggleContainer(true);
+                    } else if (distToDoor < 55) {
+                        if (player.insideHouse) {
+                            player.targetX = door.x + door.width / 2;
+                            player.targetY = door.y - player.size / 2 - 2;
+                            player.x = player.targetX; player.y = player.targetY;
+                            player.insideHouse = false;
+                            msg("Ви вийшли з дому");
+                        } else {
+                            player.targetX = door.x + door.width / 2;
+                            player.targetY = door.y + door.height + player.size / 2 + 2;
+                            player.x = player.targetX; player.y = player.targetY;
+                            player.insideHouse = true;
+                            msg("Ви зайшли в дім");
+                        }
+                    } else if (foundItemIndex !== -1 && !player.insideHouse) {
+                        if (inventory.length >= MAX_INVENTORY_SIZE) {
+                            msg("Рюкзак забитий!");
+                        } else {
+                            const it = itemsOnMap[foundItemIndex];
+                            inventory.push({
+                                id: Date.now() + Math.random(),
+                                name: it.name, type: it.type, desc: it.desc,
+                                regenType: it.regenType, regenVal: it.regenVal
+                            });
+                            itemsOnMap.splice(foundItemIndex, 1);
+                            msg(it.name + " підібрано в рюкзак!");
+                            refreshBackpack();
+                            updateStatsUI();
+                        }
+                    }
+                }
+            } else {
+                pickupHint.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (gameState === 'playing') {
+                    gameState = 'pause';
+                    isGameActive = false;
+                    clearKeys();
+                    pickupHint.style.display = 'none';
+                    statsEl.style.display = 'none';
+                    cooldownHud.style.display = 'none';
+                    compassHud.style.display = 'none';
+                    minimapHud.style.display = 'none';
+                    invUI.style.display = 'none';
+                    tpUI.style.display = 'none';
+                    containerUI.style.display = 'none';
+                    itemContextMenu.style.display = 'none';
+                    tpContextMenu.style.display = 'none';
+                    pauseUI.classList.remove('hidden');
+                    if (gameTimeInterval) { clearInterval(gameTimeInterval); gameTimeInterval = null; }
+                } else if (gameState === 'pause') {
+                    pauseUI.classList.add('hidden');
+                    statsEl.style.display = 'block';
+                    cooldownHud.style.display = 'flex';
+                    if (compassEnabled) compassHud.style.display = 'flex';
+                    if (minimapEnabled) minimapHud.style.display = 'flex';
+                    isGameActive = true;
+                    gameState = 'playing';
+                    clearKeys();
+                    if (gameTimeInterval) clearInterval(gameTimeInterval);
+                    gameTimeInterval = setInterval(() => {
+                        if (gameState === 'playing' && isGameActive) { gameTime++; updateStatsUI(); }
+                    }, 1000);
+                }
+                return;
+            }
+
+            if (e.code === 'KeyF') {
+                e.preventDefault();
+                if (gameState === 'playing' && isGameActive) toggleFlashlight();
+                return;
+            }
+
+            if (e.code === 'KeyK' || e.key.toLowerCase() === 'к') {
+                e.preventDefault();
+                if (gameState === 'playing' && isGameActive) toggleCompass();
+                return;
+            }
+
+            if (e.code === 'KeyM' || e.key.toLowerCase() === 'ь') {
+                e.preventDefault();
+                if (gameState === 'playing' && isGameActive) toggleMinimap();
+                return;
+            }
+
+            if (e.code === 'KeyL' || e.key.toLowerCase() === 'д' || e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                if (gameState === 'playing' && isGameActive) toggleTpUI();
+                return;
+            }
+
+            if (gameState !== 'playing' || !isGameActive) return;
+
+            switch (e.code) {
+                case 'KeyW': case 'ArrowUp': keys['w'] = true; e.preventDefault(); break;
+                case 'KeyS': case 'ArrowDown': keys['s'] = true; e.preventDefault(); break;
+                case 'KeyA': case 'ArrowLeft': keys['a'] = true; e.preventDefault(); break;
+                case 'KeyD': case 'ArrowRight': keys['d'] = true; e.preventDefault(); break;
+                default: keys[e.key] = true;
+            }
+
+            if (e.key.toLowerCase() === 'i') { e.preventDefault(); toggleInventory(); return; }
+
+            if (e.code === 'KeyP') {
+                e.preventDefault();
+                if (gameState === 'playing' && isGameActive) {
+                    let firstEmpty = tpPoints.findIndex(pt => pt === null);
+                    if (firstEmpty === -1) {
+                        msg("✖ Усі точки TP використані!");
+                    } else {
+                        tpPoints[firstEmpty] = { x: player.x, y: player.y };
+                        msg(`Точку TP #${firstEmpty + 1} встановлено.`);
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            switch (e.code) {
+                case 'KeyW': case 'ArrowUp': keys['w'] = false; e.preventDefault(); break;
+                case 'KeyS': case 'ArrowDown': keys['s'] = false; e.preventDefault(); break;
+                case 'KeyA': case 'ArrowLeft': keys['a'] = false; e.preventDefault(); break;
+                case 'KeyD': case 'ArrowRight': keys['d'] = false; e.preventDefault(); break;
+                default: keys[e.key] = false;
+            }
+        });
+
+        function toggleTpUI(forceState) {
+            const show = typeof forceState === 'boolean' ? forceState : (tpUI.style.display === 'none' || tpUI.style.display === '');
+            tpUI.style.display = show ? 'block' : 'none';
+            tpUI.setAttribute('aria-hidden', show ? 'false' : 'true');
+            if (show) refreshTpUI();
+            else tpContextMenu.style.display = 'none';
+        }
+
+        function refreshTpUI() {
+            tpGrid.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const slot = document.createElement('div');
+                const pt = tpPoints[i];
+                if (pt) {
+                    slot.className = 'tp-slot active';
+                    slot.innerHTML = `<span>Точка ${i + 1}</span><span style="color:#7CFC00; font-size:0.8rem;">Активна</span>`;
+                    
+                    slot.addEventListener('click', () => {
+                        player.targetX = pt.x;
+                        player.targetY = pt.y;
+                        player.x = pt.x;
+                        player.y = pt.y;
+                        player.insideHouse = isInsideHouse(player.x, player.y);
+                        toggleTpUI(false);
+                        msg(`Телепортація до точки #${i + 1}!`);
                     });
-                    itemsOnMap.splice(foundItemIndex, 1);
-                    msg(it.name + " підібрано в рюкзак!");
-                    refreshBackpack();
-                    updateStatsUI();
+
+                    slot.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        selectedTpIndex = i;
+                        tpContextMenu.style.display = 'block';
+                        tpContextMenu.style.left = e.clientX + 'px';
+                        tpContextMenu.style.top = e.clientY + 'px';
+                    });
+                } else {
+                    slot.className = 'tp-slot inactive';
+                    slot.innerHTML = `<span>Точка ${i + 1}</span><span style="font-size:0.8rem;">Не встановлена</span>`;
                 }
+                tpGrid.appendChild(slot);
             }
         }
-    } else {
-        pickupHint.style.display = 'none';
-    }
-}
 
-function checkTeleport() {
-    if (tpPoints.length < 2) return;
-    for (let i = 0; i < tpPoints.length; i++) {
-        const pt = tpPoints[i];
-        if (Math.hypot(player.x - pt.x, player.y - pt.y) < 35) {
-            pickupHint.style.display = 'block';
-            pickupHint.textContent = 'Натисніть E, щоб телепортуватися до іншої точки TP';
-            if (keys['e'] || keys['E'] || keys['у'] || keys['У']) {
-                keys['e'] = false; keys['E'] = false; keys['у'] = false; keys['У'] = false;
-                const targetPt = tpPoints[i === 0 ? 1 : 0];
-                player.targetX = targetPt.x;
-                player.targetY = targetPt.y;
-                player.x = player.targetX;
-                player.y = player.targetY;
-                player.insideHouse = isInsideHouse(player.x, player.y);
-                msg("Телепортація виконана!");
-            }
-            return;
+        function toggleInventory(forceState) {
+            const show = typeof forceState === 'boolean' ? forceState : (invUI.style.display === 'none' || invUI.style.display === '');
+            invUI.style.display = show ? 'block' : 'none';
+            invUI.setAttribute('aria-hidden', show ? 'false' : 'true');
+            if (show) refreshBackpack();
+            else itemContextMenu.style.display = 'none';
         }
-    }
-}
 
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        if (gameState === 'playing') {
-            gameState = 'pause';
+        function refreshBackpack() {
+            inventoryGrid.innerHTML = '';
+            for (let i = 0; i < MAX_INVENTORY_SIZE; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'inv-slot';
+                if (inventory[i]) {
+                    const it = inventory[i];
+                    slot.innerHTML = `<span class="item-name">${it.name}</span>`;
+                    slot.title = `${it.name} (${it.desc})`;
+                    slot.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); });
+                    slot.addEventListener('mousedown', (e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        selectedItemIndex = i;
+                        selectedItemSource = 'backpack';
+                        ctxMoveBtn.style.display = (containerUI.style.display === 'block') ? 'block' : 'none';
+                        itemContextMenu.style.display = 'block';
+                        itemContextMenu.style.left = e.clientX + 'px';
+                        itemContextMenu.style.top = e.clientY + 'px';
+                    });
+                }
+                inventoryGrid.appendChild(slot);
+            }
+        }
+
+        function toggleContainer(forceState) {
+            const show = typeof forceState === 'boolean' ? forceState : (containerUI.style.display === 'none' || containerUI.style.display === '');
+            containerUI.style.display = show ? 'block' : 'none';
+            containerUI.setAttribute('aria-hidden', show ? 'false' : 'true');
+            if (show) refreshContainerUI();
+            else itemContextMenu.style.display = 'none';
+        }
+
+        function refreshContainerUI() {
+            chestGrid.innerHTML = '';
+            for (let i = 0; i < MAX_CHEST_SIZE; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'inv-slot';
+                if (chestInventory[i]) {
+                    const it = chestInventory[i];
+                    slot.innerHTML = `<span class="item-name">${it.name}</span>`;
+                    slot.title = `${it.name} (${it.desc})`;
+                    slot.addEventListener('mousedown', (e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        selectedItemIndex = i;
+                        selectedItemSource = 'chest';
+                        ctxMoveBtn.style.display = 'block';
+                        itemContextMenu.style.display = 'block';
+                        itemContextMenu.style.left = e.clientX + 'px';
+                        itemContextMenu.style.top = e.clientY + 'px';
+                    });
+                }
+                chestGrid.appendChild(slot);
+            }
+
+            backpackGrid.innerHTML = '';
+            for (let i = 0; i < MAX_INVENTORY_SIZE; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'inv-slot';
+                if (inventory[i]) {
+                    const it = inventory[i];
+                    slot.innerHTML = `<span class="item-name">${it.name}</span>`;
+                    slot.title = `${it.name} (${it.desc})`;
+                    slot.addEventListener('mousedown', (e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        selectedItemIndex = i;
+                        selectedItemSource = 'backpack';
+                        ctxMoveBtn.style.display = 'block';
+                        itemContextMenu.style.display = 'block';
+                        itemContextMenu.style.left = e.clientX + 'px';
+                        itemContextMenu.style.top = e.clientY + 'px';
+                    });
+                }
+                backpackGrid.appendChild(slot);
+            }
+        }
+
+        ctxUseBtn.onclick = () => {
+            itemContextMenu.style.display = 'none';
+            if (selectedItemIndex !== null && selectedItemSource === 'backpack') {
+                useItem(selectedItemIndex);
+                selectedItemIndex = null;
+            } else {
+                msg("Використовувати можна тільки з рюкзака!");
+            }
+        };
+
+        ctxMoveBtn.onclick = () => {
+            itemContextMenu.style.display = 'none';
+            if (selectedItemIndex !== null) {
+                if (selectedItemSource === 'backpack') {
+                    if (chestInventory.length >= MAX_CHEST_SIZE) {
+                        msg("Сундук заповнений (максимум 30 предметів)!");
+                    } else {
+                        const item = inventory.splice(selectedItemIndex, 1)[0];
+                        chestInventory.push(item);
+                        msg("Переміщено в сундук");
+                    }
+                } else if (selectedItemSource === 'chest') {
+                    if (inventory.length >= MAX_INVENTORY_SIZE) {
+                        msg("Рюкзак заповнений (максимум 20 предметів)!");
+                    } else {
+                        const item = chestInventory.splice(selectedItemIndex, 1)[0];
+                        inventory.push(item);
+                        msg("Переміщено в рюкзак");
+                    }
+                }
+                refreshContainerUI();
+                refreshBackpack();
+                selectedItemIndex = null;
+            }
+        };
+
+        ctxDropBtn.onclick = () => {
+            itemContextMenu.style.display = 'none';
+            if (selectedItemIndex !== null) {
+                if (selectedItemSource === 'backpack') {
+                    dropItem(selectedItemIndex);
+                } else {
+                    const it = chestInventory[selectedItemIndex];
+                    itemsOnMap.push({
+                        x: player.x + rnd(-20, 20), y: player.y + rnd(-20, 20),
+                        type: it.type, name: it.name, desc: it.desc,
+                        regenType: it.regenType, regenVal: it.regenVal
+                    });
+                    chestInventory.splice(selectedItemIndex, 1);
+                    refreshContainerUI();
+                    msg(`${it.name} викинуто з сундука`);
+                }
+                selectedItemIndex = null;
+            }
+        };
+
+        ctxTpDeleteBtn.onclick = () => {
+            tpContextMenu.style.display = 'none';
+            if (selectedTpIndex !== null) {
+                tpPoints[selectedTpIndex] = null;
+                msg(`Точку TP #${selectedTpIndex + 1} видалено.`);
+                refreshTpUI();
+                selectedTpIndex = null;
+            }
+        };
+
+        window.addEventListener('click', () => { 
+            itemContextMenu.style.display = 'none'; 
+            tpContextMenu.style.display = 'none';
+        });
+
+        function useItem(index) {
+            const it = inventory[index];
+            if (!it) return;
+
+            if (it.regenType === 'hp') {
+                player.hp = Math.min(player.maxHp, player.hp + it.regenVal);
+                msg(`${it.name}: відновлено ${it.regenVal} HP!`);
+            } else {
+                player.energy = Math.min(player.maxEnergy, player.energy + it.regenVal);
+                msg(`${it.name}: відновлено ${it.regenVal}% енергії!`);
+            }
+
+            inventory.splice(index, 1);
+            refreshBackpack();
+            updateStatsUI();
+            updateHomeUI();
+        }
+
+        function dropItem(index) {
+            const it = inventory[index];
+            if (!it) return;
+            itemsOnMap.push({
+                x: player.x + rnd(-20, 20), y: player.y + rnd(-20, 20),
+                type: it.type, name: it.name, desc: it.desc,
+                regenType: it.regenType, regenVal: it.regenVal
+            });
+            inventory.splice(index, 1);
+            refreshBackpack();
+            msg(`${it.name} викинуто`);
+        }
+
+        function die(reason) {
+            gameState = 'gameover';
+            player.hp = 0;
             isGameActive = false;
-            stopAmbient();
+            updateStatsUI();
             clearKeys();
+
+            if (gameTimeInterval) { clearInterval(gameTimeInterval); gameTimeInterval = null; }
+
+            playDeath();
             pickupHint.style.display = 'none';
             statsEl.style.display = 'none';
-            controlsEl.style.display = 'none';
-            invUI.style.display = 'none';
-            containerUI.style.display = 'none';
             cooldownHud.style.display = 'none';
+            compassHud.style.display = 'none';
+            minimapHud.style.display = 'none';
+            invUI.style.display = 'none';
+            tpUI.style.display = 'none';
+            containerUI.style.display = 'none';
             itemContextMenu.style.display = 'none';
-            pauseUI.classList.remove('hidden');
-            if (gameTimeInterval) {
-                clearInterval(gameTimeInterval);
-                gameTimeInterval = null;
-            }
-        } else if (gameState === 'pause') {
-            pauseUI.classList.add('hidden');
-            statsEl.style.display = 'block';
-            controlsEl.style.display = 'block';
-            cooldownHud.style.display = 'flex';
-            isGameActive = true;
-            gameState = 'playing';
-            startAmbient();
+            tpContextMenu.style.display = 'none';
+            deathReasonEl.textContent = reason;
+            gameOverScreen.classList.remove('hidden');
+            saveRecords();
+        }
+
+        function resetGame() {
+            player.x = 0; player.y = 0; player.targetX = 0; player.targetY = 0;
+            player.hp = player.maxHp; player.energy = player.maxEnergy; player.insideHouse = false;
+            stats.INT = 0; stats.redKills = 0; stats.blueKills = 0; gameTime = 0;
+            inventory = []; chestInventory = []; tpPoints = [null, null, null, null, null];
+            itemsOnMap.length = 0; enemies.length = 0;
+            flashlightOn = false; lighterActive = false;
+            screamCooldown = 0; lighterCooldown = 0;
+            screamEffect = null; lighterEffect = null;
             clearKeys();
-            if (gameTimeInterval) clearInterval(gameTimeInterval);
-            gameTimeInterval = setInterval(() => {
-                if (gameState === 'playing' && isGameActive) {
-                    gameTime++;
+
+            if (gameTimeInterval) { clearInterval(gameTimeInterval); gameTimeInterval = null; }
+
+            for (let i = 0; i < 6; i++) spawnEnemy();
+            for (let i = 0; i < 35; i++) { spawnItemAt(rnd(-1500, 1500), rnd(-1500, 1500)); }
+            updateHomeUI();
+            updateStatsUI();
+            updateCooldownUI();
+        }
+
+        function updateStatsUI() {
+            hpEl.textContent = `❤︎ Життя: ${Math.floor(player.hp)} / ${player.maxHp}`;
+            energyEl.textContent = `𐓏 Енергія: ${Math.floor(player.energy)}%`;
+            intEl.textContent = `⚑ Вбито: ${stats.INT}`;
+            gameTimeEl.textContent = `↻ Час: ${formatGameTime(gameTime)}`;
+        }
+
+        function updateCooldownUI() {
+            if (player.insideHouse) {
+                screamCdEl.textContent = '✖'; screamCdEl.className = 'cd-value disabled';
+                lighterCdEl.textContent = '✖'; lighterCdEl.className = 'cd-value disabled';
+                return;
+            }
+
+            if (!flashlightOn) {
+                screamCdEl.textContent = '✖'; screamCdEl.className = 'cd-value disabled';
+            } else if (screamCooldown > 0) {
+                screamCdEl.textContent = Math.ceil(screamCooldown) + 'с'; screamCdEl.className = 'cd-value';
+            } else {
+                screamCdEl.textContent = '✔'; screamCdEl.className = 'cd-value ready';
+            }
+
+            if (flashlightOn) {
+                lighterCdEl.textContent = '✖'; lighterCdEl.className = 'cd-value disabled';
+            } else if (lighterCooldown > 0) {
+                lighterCdEl.textContent = Math.ceil(lighterCooldown) + 'с'; lighterCdEl.className = 'cd-value';
+            } else {
+                lighterCdEl.textContent = '✔'; lighterCdEl.className = 'cd-value ready';
+            }
+        }
+
+        function toggleCompass() {
+            compassEnabled = !compassEnabled;
+            localStorage.setItem('whisper_compass_enabled', compassEnabled);
+            playToggle();
+            msg(compassEnabled ? 'Компас увімкнено' : 'Компас вимкнено');
+        }
+
+        function toggleMinimap() {
+            minimapEnabled = !minimapEnabled;
+            localStorage.setItem('whisper_minimap_enabled', minimapEnabled);
+            playToggle();
+            msg(minimapEnabled ? 'Міні-карту увімкнено' : 'Міні-карту вимкнено');
+        }
+
+        function updateCompass() {
+            if (!compassEnabled || gameState !== 'playing' || !isGameActive) {
+                compassHud.style.display = 'none';
+                return;
+            }
+            compassHud.style.display = 'flex';
+
+            const houseCenterX = house.x + house.size / 2;
+            const houseCenterY = house.y + house.size / 2;
+
+            const dx = houseCenterX - player.x;
+            const dy = houseCenterY - player.y;
+            const distancePixels = Math.hypot(dx, dy);
+            const angleToHouse = Math.atan2(dy, dx);
+
+            const meters = Math.round(distancePixels / 40);
+            if (meters >= 1000) {
+                compassDistanceEl.textContent = (meters / 1000).toFixed(1) + ' км';
+            } else {
+                compassDistanceEl.textContent = meters + ' м';
+            }
+
+            compassCtx.clearRect(0, 0, compassCanvas.width, compassCanvas.height);
+            const cx = compassCanvas.width / 2;
+            const cy = compassCanvas.height / 2;
+
+            compassCtx.beginPath();
+            compassCtx.arc(cx, cy, 26, 0, Math.PI * 2);
+            compassCtx.fillStyle = 'rgba(20, 20, 25, 0.9)';
+            compassCtx.fill();
+            compassCtx.strokeStyle = '#444';
+            compassCtx.lineWidth = 1.5;
+            compassCtx.stroke();
+
+            compassCtx.save();
+            compassCtx.translate(cx, cy);
+            compassCtx.rotate(angleToHouse);
+
+            compassCtx.beginPath();
+            compassCtx.moveTo(16, 0);
+            compassCtx.lineTo(-10, -8);
+            compassCtx.lineTo(-4, 0);
+            compassCtx.lineTo(-10, 8);
+            compassCtx.closePath();
+
+            compassCtx.fillStyle = '#ff5555';
+            compassCtx.shadowColor = 'rgba(255, 85, 85, 0.8)';
+            compassCtx.shadowBlur = 6;
+            compassCtx.fill();
+
+            compassCtx.restore();
+        }
+
+        function updateMinimap() {
+            if (!minimapEnabled || gameState !== 'playing' || !isGameActive) {
+                minimapHud.style.display = 'none';
+                return;
+            }
+            minimapHud.style.display = 'flex';
+
+            minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+            minimapCtx.fillStyle = 'rgba(12, 12, 16, 0.92)';
+            minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+            const mw = minimapCanvas.width;
+            const mh = minimapCanvas.height;
+            const mCx = mw / 2;
+            const mCy = mh / 2;
+
+            const mapRadiusMeters = 50;
+            const worldRadiusPixels = mapRadiusMeters * 40;
+            const scale = Math.min(mw, mh) / (worldRadiusPixels * 2);
+
+            minimapCtx.save();
+            minimapCtx.translate(mCx, mCy);
+
+            const houseScreenX = (house.x + house.size / 2 - player.x) * scale;
+            const houseScreenY = (house.y + house.size / 2 - player.y) * scale;
+            const houseScreenSize = house.size * scale;
+            minimapCtx.fillStyle = '#8b5a2b';
+            minimapCtx.fillRect(houseScreenX - houseScreenSize / 2, houseScreenY - houseScreenSize / 2, houseScreenSize, houseScreenSize);
+
+            enemies.forEach(en => {
+                if (flashlightOn && en.type === 'blue') return;
+                if (!flashlightOn && en.type === 'red') return;
+
+                const ex = (en.x - player.x) * scale;
+                const ey = (en.y - player.y) * scale;
+                if (Math.hypot(ex, ey) <= Math.min(mw, mh) / 2) {
+                    minimapCtx.fillStyle = en.type === 'red' ? '#ff4444' : '#4488ff';
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(ex, ey, 3, 0, Math.PI * 2);
+                    minimapCtx.fill();
+                }
+            });
+
+            minimapCtx.fillStyle = '#ffffff';
+            minimapCtx.beginPath();
+            minimapCtx.arc(0, 0, 3.5, 0, Math.PI * 2);
+            minimapCtx.fill();
+
+            minimapCtx.restore();
+
+            minimapCtx.strokeStyle = '#333';
+            minimapCtx.lineWidth = 1;
+            minimapCtx.strokeRect(0, 0, mw, mh);
+        }
+
+        function toggleFlashlight() {
+            flashlightOn = !flashlightOn;
+            playToggle();
+            updateCooldownUI();
+        }
+
+        function drawEnemyEntity(en, timeNow, index) {
+            ctx2.save();
+            const bobOffset = Math.sin((en.walkCycle || 0) * 0.4) * 4;
+            const renderY = en.y + bobOffset;
+
+            if (en.trail && en.trail.length > 0) {
+                en.trail.forEach((pos, idx) => {
+                    const tAlpha = (1 - idx / en.trail.length) * 0.3;
+                    ctx2.fillStyle = en.type === 'red' ? `rgba(255, 80, 80, ${tAlpha})` : `rgba(80, 160, 255, ${tAlpha})`;
+                    ctx2.beginPath();
+                    ctx2.arc(pos.x, pos.y, en.size * (1 - idx / en.trail.length) * 0.6, 0, Math.PI * 2);
+                    ctx2.fill();
+                });
+            }
+
+            if (en.type === 'red') {
+                const pulse = Math.sin(timeNow * 3 + index) * 4;
+                const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
+
+                const grad = ctx2.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
+                grad.addColorStop(0, `rgba(255, 80, 80, ${alphaBase})`);
+                grad.addColorStop(0.5, `rgba(220, 40, 40, ${alphaBase * 0.4})`);
+                grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx2.fillStyle = grad;
+                ctx2.beginPath();
+                ctx2.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
+                ctx2.fill();
+
+                ctx2.fillStyle = en.state === 'scared' ? 'rgba(255, 120, 120, 0.4)' : 'rgba(235, 50, 50, 0.95)';
+                ctx2.shadowColor = 'rgba(255, 50, 50, 0.8)';
+                ctx2.shadowBlur = 18;
+                ctx2.beginPath();
+                ctx2.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
+                ctx2.fill();
+
+                ctx2.fillStyle = '#fff';
+                ctx2.shadowColor = '#fff';
+                ctx2.shadowBlur = 10;
+                ctx2.beginPath();
+                ctx2.arc(en.x - 6, renderY - 3, 4, 0, Math.PI * 2);
+                ctx2.arc(en.x + 6, renderY - 3, 4, 0, Math.PI * 2);
+                ctx2.fill();
+            } else {
+                const pulse = Math.sin(timeNow * 3 + index) * 4;
+                const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
+
+                const grad = ctx2.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
+                grad.addColorStop(0, `rgba(60, 150, 255, ${alphaBase})`);
+                grad.addColorStop(0.5, `rgba(30, 90, 220, ${alphaBase * 0.4})`);
+                grad.addColorStop(1, 'rgba(0, 50, 200, 0)');
+                ctx2.fillStyle = grad;
+                ctx2.beginPath();
+                ctx2.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
+                ctx2.fill();
+
+                ctx2.fillStyle = en.state === 'scared' ? 'rgba(100, 180, 255, 0.4)' : 'rgba(40, 130, 245, 0.95)';
+                ctx2.shadowColor = 'rgba(40, 130, 245, 0.8)';
+                ctx2.shadowBlur = 18;
+                ctx2.beginPath();
+                ctx2.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
+                ctx2.fill();
+
+                ctx2.shadowBlur = 0;
+                ctx2.beginPath();
+                ctx2.arc(en.x, renderY - 2, 15, 0.05 * Math.PI, 0.95 * Math.PI);
+                ctx2.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx2.lineWidth = 3;
+                ctx2.stroke();
+            }
+            ctx2.restore();
+        }
+
+        function draw() {
+            ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx2.save();
+            ctx2.translate(canvas.width / 2 - player.x, canvas.height / 2 - player.y);
+
+            const timeNow = Date.now() * 0.005;
+
+            if (!player.insideHouse) {
+                ctx2.fillStyle = '#000000';
+                ctx2.fillRect(player.x - canvas.width, player.y - canvas.height, canvas.width * 2, canvas.height * 2);
+
+                ctx2.strokeStyle = 'rgba(255,255,255,0.03)';
+                ctx2.lineWidth = 1.5;
+                let startX = Math.floor((player.x - canvas.width) / 150) * 150;
+                let endX = startX + canvas.width * 2;
+                let startY = Math.floor((player.y - canvas.height) / 150) * 150;
+                let endY = startY + canvas.height * 2;
+                for (let x = startX; x <= endX; x += 150) {
+                    ctx2.beginPath(); ctx2.moveTo(x, startY); ctx2.lineTo(x, endY); ctx2.stroke();
+                }
+                for (let y = startY; y <= endY; y += 150) {
+                    ctx2.beginPath(); ctx2.moveTo(startX, y); ctx2.lineTo(endX, y); ctx2.stroke();
+                }
+
+                itemsOnMap.forEach(it => {
+                    const distToPlayer = Math.hypot(player.x - it.x, player.y - it.y);
+                    if (flashlightOn && distToPlayer < 400) {
+                        ctx2.save();
+                        ctx2.fillStyle = it.regenType === 'hp' ? '#ff7777' : '#f2c94a';
+                        ctx2.shadowColor = it.regenType === 'hp' ? 'rgba(255,119,119,0.4)' : 'rgba(242,201,74,0.4)';
+                        ctx2.shadowBlur = 16;
+                        ctx2.fillRect(it.x - 8, it.y - 8, 16, 16);
+                        ctx2.restore();
+                    }
+                });
+
+                // 1. Спочатку малюємо точки телепортації (tp) ПІД привидами[cite: 7]
+                tpPoints.forEach((pt, index) => {
+                    if (pt) {
+                        ctx2.save();
+                        ctx2.fillStyle = '#7CFC00';
+                        ctx2.shadowColor = 'rgba(124, 252, 0, 0.8)';
+                        ctx2.shadowBlur = 15;
+                        ctx2.beginPath();
+                        ctx2.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
+                        ctx2.fill();
+                        ctx2.fillStyle = '#000';
+                        ctx2.font = 'bold 10px monospace';
+                        ctx2.fillText(`${index+1}`, pt.x - 3, pt.y + 4);
+                        ctx2.restore();
+                    }
+                });
+
+                // 2. Потім малюємо привидів НАД точками телепортації[cite: 7]
+                enemies.forEach((en, index) => {
+                    if (!collidesWithHouse(en.x, en.y, en.size / 2)) {
+                        drawEnemyEntity(en, timeNow, index);
+                    }
+                });
+
+                ctx2.save();
+                ctx2.fillStyle = house.color;
+                ctx2.strokeStyle = '#5a3818';
+                ctx2.lineWidth = 4;
+                ctx2.fillRect(house.x, house.y, house.size, house.size);
+                ctx2.strokeRect(house.x, house.y, house.size, house.size);
+
+                ctx2.fillStyle = door.color;
+                ctx2.shadowColor = 'rgba(127, 140, 141, 0.6)';
+                ctx2.shadowBlur = 10;
+                ctx2.fillRect(door.x, door.y, door.width, door.height);
+                ctx2.restore();
+
+            } else {
+                ctx2.fillStyle = '#000000';
+                ctx2.fillRect(player.x - canvas.width * 2, player.y - canvas.height * 2, canvas.width * 4, canvas.height * 4);
+
+                ctx2.save();
+                ctx2.fillStyle = '#140e08';
+                ctx2.fillRect(house.x, house.y, house.size, house.size);
+                ctx2.strokeStyle = '#5a3818';
+                ctx2.lineWidth = 4;
+                ctx2.strokeRect(house.x, house.y, house.size, house.size);
+
+                ctx2.fillStyle = door.color;
+                ctx2.fillRect(door.x, door.y, door.width, door.height);
+                ctx2.restore();
+
+                ctx2.save();
+                ctx2.fillStyle = chest.color;
+                ctx2.shadowColor = 'rgba(255, 215, 0, 0.4)';
+                ctx2.shadowBlur = 8;
+                ctx2.fillRect(chest.x - chest.size / 2, chest.y - chest.size / 2, chest.size, chest.size);
+                ctx2.restore();
+
+                tpPoints.forEach((pt, index) => {
+                    if (pt && isInsideHouse(pt.x, pt.y)) {
+                        ctx2.save();
+                        ctx2.fillStyle = '#7CFC00';
+                        ctx2.shadowColor = 'rgba(124, 252, 0, 0.8)';
+                        ctx2.shadowBlur = 15;
+                        ctx2.beginPath();
+                        ctx2.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
+                        ctx2.fill();
+                        ctx2.fillStyle = '#000';
+                        ctx2.font = 'bold 10px monospace';
+                        ctx2.fillText(`${index+1}`, pt.x - 3, pt.y + 4);
+                        ctx2.restore();
+                    }
+                });
+            }
+
+            if (screamEffect) {
+                const se = screamEffect;
+                ctx2.save();
+                const grad = ctx2.createRadialGradient(se.x, se.y, 0, se.x, se.y, se.radius);
+                grad.addColorStop(0, `rgba(255,255,255,${se.alpha * 0.7})`);
+                grad.addColorStop(0.3, `rgba(220,220,220,${se.alpha * 0.35})`);
+                grad.addColorStop(1, `rgba(200,200,200,0)`);
+                ctx2.fillStyle = grad;
+                ctx2.beginPath();
+                ctx2.arc(se.x, se.y, se.radius, 0, Math.PI * 2);
+                ctx2.fill();
+                ctx2.restore();
+
+                se.radius += 5;
+                se.alpha *= 0.97;
+                if (se.alpha < 0.01 || se.radius > se.maxRadius) screamEffect = null;
+            }
+
+            if (lighterEffect) {
+                const le = lighterEffect;
+                ctx2.save();
+                const length = le.length * le.alpha;
+                ctx2.translate(le.x, le.y);
+                ctx2.rotate(le.angle);
+                ctx2.beginPath();
+                ctx2.moveTo(length, 0);
+                ctx2.lineTo(-10, -12);
+                ctx2.lineTo(-10, 12);
+                ctx2.closePath();
+                ctx2.fillStyle = `rgba(255, 210, 90, ${le.alpha * 0.7})`;
+                ctx2.shadowColor = `rgba(255, 210, 90, ${le.alpha * 0.5})`;
+                ctx2.shadowBlur = 35;
+                ctx2.fill();
+                ctx2.restore();
+
+                le.alpha *= 0.98;
+                if (le.alpha < 0.02) lighterEffect = null;
+            }
+
+            const playerBob = Math.sin(player.walkCycle) * 2.5;
+            const playerTilt = Math.sin(player.walkCycle * 0.5) * 0.04;
+            const renderPlayerY = player.y + playerBob;
+
+            ctx2.save();
+            ctx2.translate(player.x, renderPlayerY);
+            ctx2.rotate(playerTilt);
+            ctx2.fillStyle = '#e8e8e8';
+            ctx2.shadowColor = 'rgba(232, 232, 232, 0.25)';
+            ctx2.shadowBlur = 12;
+            ctx2.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
+            ctx2.restore();
+
+            ctx2.restore();
+
+            if (!player.insideHouse) {
+                if (flashlightOn) {
+                    const grad = ctx2.createRadialGradient(canvas.width / 2, canvas.height / 2, 70, canvas.width / 2, canvas.height / 2, 420);
+                    grad.addColorStop(0, 'rgba(250, 250, 235, 0.45)');
+                    grad.addColorStop(0.4, 'rgba(220, 220, 200, 0.15)');
+                    grad.addColorStop(0.8, 'rgba(10, 10, 18, 0.85)');
+                    grad.addColorStop(1, 'rgba(0, 0, 0, 1)');
+                    ctx2.fillStyle = grad;
+                    ctx2.fillRect(0, 0, canvas.width, canvas.height);
+                } else {
+                    const gradDark = ctx2.createRadialGradient(canvas.width / 2, canvas.height / 2, 30, canvas.width / 2, canvas.height / 2, 300);
+                    gradDark.addColorStop(0, 'rgba(15, 15, 25, 0.1)');
+                    gradDark.addColorStop(0.6, 'rgba(4, 4, 8, 0.92)');
+                    gradDark.addColorStop(1, 'rgba(0, 0, 0, 1)');
+                    ctx2.fillStyle = gradDark;
+                    ctx2.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            } else {
+                const gradInside = ctx2.createRadialGradient(canvas.width / 2, canvas.height / 2, 20, canvas.width / 2, canvas.height / 2, 250);
+                gradInside.addColorStop(0, 'rgba(160, 140, 100, 0.22)');
+                gradInside.addColorStop(0.6, 'rgba(70, 60, 40, 0.35)');
+                gradInside.addColorStop(1, 'rgba(0, 0, 0, 1)');
+                ctx2.fillStyle = gradInside;
+                ctx2.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            if (cheatsEnabled && gameState === 'playing') {
+                ctx2.save();
+                ctx2.fillStyle = 'rgba(76, 175, 80, 0.7)';
+                ctx2.font = '14px monospace';
+                ctx2.fillText('★ ЧИТИ УВІМКНЕНО', 20, 240);
+                ctx2.restore();
+            }
+        }
+
+        function gameTick(timestamp) {
+            if (timestamp) {
+                const delta = (timestamp - lastTimestamp) / 1000;
+                lastTimestamp = timestamp;
+
+                if (screamCooldown > 0) screamCooldown = Math.max(0, screamCooldown - delta);
+                if (lighterCooldown > 0) lighterCooldown = Math.max(0, lighterCooldown - delta);
+                updateCooldownUI();
+            }
+
+            if (gameState === 'menu' || gameState === 'settings' || gameState === 'soundSettings') {
+                ctx2.clearRect(0, 0, canvas.width, canvas.height);
+                ctx2.fillStyle = '#000';
+                ctx2.fillRect(0, 0, canvas.width, canvas.height);
+            } else if (gameState === 'playing') {
+                if (isGameActive) {
+                    updatePlayerPosition();
+                    spawnLoop();
+                    updateEnemies();
+                    checkInteractions();
+                    updateCompass();
+                    updateMinimap();
+
+                    if (lighterActive && Date.now() - lighterTimer > 5200) {
+                        lighterActive = false;
+                    }
                     updateStatsUI();
                 }
+                draw();
+            } else {
+                draw();
+            }
+            requestAnimationFrame(gameTick);
+        }
+
+        function startGame(loadFromSave = false) {
+            initAudio();
+            clearKeys();
+
+            menuScreen.classList.add('hidden');
+            settingsUI.classList.add('hidden');
+            soundSettingsUI.classList.add('hidden');
+            rulesUI.classList.add('hidden');
+            eulaUI.classList.add('hidden');
+            pauseUI.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            statsEl.style.display = 'block';
+            cooldownHud.style.display = 'flex';
+            if (compassEnabled) compassHud.style.display = 'flex';
+            if (minimapEnabled) minimapHud.style.display = 'flex';
+
+            if (loadFromSave) {
+                if (!loadGame()) resetGame();
+            } else {
+                deleteSave();
+                resetGame();
+            }
+
+            isGameActive = true;
+            gameState = 'playing';
+
+            if (gameTimeInterval) clearInterval(gameTimeInterval);
+            gameTimeInterval = setInterval(() => {
+                if (gameState === 'playing' && isGameActive) { gameTime++; updateStatsUI(); }
             }, 1000);
         }
-        return;
-    }
 
-    if (e.code === 'KeyF') {
-        e.preventDefault();
-        if (gameState === 'playing' && isGameActive) toggleFlashlight();
-        return;
-    }
-
-    if (gameState !== 'playing' || !isGameActive) return;
-
-    switch(e.code) {
-        case 'KeyW':
-        case 'ArrowUp':
-            keys['w'] = true;
-            e.preventDefault();
-            break;
-        case 'KeyS':
-        case 'ArrowDown':
-            keys['s'] = true;
-            e.preventDefault();
-            break;
-        case 'KeyA':
-        case 'ArrowLeft':
-            keys['a'] = true;
-            e.preventDefault();
-            break;
-        case 'KeyD':
-        case 'ArrowRight':
-            keys['d'] = true;
-            e.preventDefault();
-            break;
-        default:
-            keys[e.key] = true;
-    }
-
-    if (e.key.toLowerCase() === 'i') {
-        e.preventDefault();
-        toggleInventory();
-        return;
-    }
-
-    if (e.code === 'KeyP') {
-        e.preventDefault();
-        if (gameState === 'playing' && isGameActive) {
-            if (tpPoints.length >= 2) {
-                tpPoints.shift();
-            }
-            tpPoints.push({ x: player.x, y: player.y });
-            msg(`Точку TP встановлено (${tpPoints.length}/2). Зелена.`);
-        }
-    }
-});
-
-window.addEventListener('keyup', (e) => {
-    switch(e.code) {
-        case 'KeyW':
-        case 'ArrowUp':
-            keys['w'] = false;
-            e.preventDefault();
-            break;
-        case 'KeyS':
-        case 'ArrowDown':
-            keys['s'] = false;
-            e.preventDefault();
-            break;
-        case 'KeyA':
-        case 'ArrowLeft':
-            keys['a'] = false;
-            e.preventDefault();
-            break;
-        case 'KeyD':
-        case 'ArrowRight':
-            keys['d'] = false;
-            e.preventDefault();
-            break;
-        default:
-            keys[e.key] = false;
-    }
-});
-
-function toggleInventory(forceState) {
-    const show = typeof forceState === 'boolean' ? forceState : (invUI.style.display === 'none' || invUI.style.display === '');
-    invUI.style.display = show ? 'block' : 'none';
-    invUI.setAttribute('aria-hidden', show ? 'false' : 'true');
-    if (show) refreshBackpack();
-    else itemContextMenu.style.display = 'none';
-}
-
-function refreshBackpack() {
-    inventoryGrid.innerHTML = '';
-    for (let i = 0; i < MAX_INVENTORY_SIZE; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'inv-slot';
-        
-        if (inventory[i]) {
-            const it = inventory[i];
-            slot.innerHTML = `<span class="item-name">${it.name}</span>`;
-            slot.title = `${it.name} (${it.desc})`;
-            
-            slot.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-
-            slot.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                selectedItemIndex = i;
-                selectedItemSource = 'backpack';
-                ctxMoveBtn.style.display = (containerUI.style.display === 'block') ? 'block' : 'none';
-                itemContextMenu.style.display = 'block';
-                itemContextMenu.style.left = e.clientX + 'px';
-                itemContextMenu.style.top = e.clientY + 'px';
-            });
-        }
-        inventoryGrid.appendChild(slot);
-    }
-}
-
-function toggleContainer(forceState) {
-    const show = typeof forceState === 'boolean' ? forceState : (containerUI.style.display === 'none' || containerUI.style.display === '');
-    containerUI.style.display = show ? 'block' : 'none';
-    containerUI.setAttribute('aria-hidden', show ? 'false' : 'true');
-    if (show) refreshContainerUI();
-    else itemContextMenu.style.display = 'none';
-}
-
-function refreshContainerUI() {
-    chestGrid.innerHTML = '';
-    for (let i = 0; i < MAX_CHEST_SIZE; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'inv-slot';
-        if (chestInventory[i]) {
-            const it = chestInventory[i];
-            slot.innerHTML = `<span class="item-name">${it.name}</span>`;
-            slot.title = `${it.name} (${it.desc})`;
-            slot.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                selectedItemIndex = i;
-                selectedItemSource = 'chest';
-                ctxMoveBtn.style.display = 'block';
-                itemContextMenu.style.display = 'block';
-                itemContextMenu.style.left = e.clientX + 'px';
-                itemContextMenu.style.top = e.clientY + 'px';
-            });
-        }
-        chestGrid.appendChild(slot);
-    }
-
-    backpackGrid.innerHTML = '';
-    for (let i = 0; i < MAX_INVENTORY_SIZE; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'inv-slot';
-        if (inventory[i]) {
-            const it = inventory[i];
-            slot.innerHTML = `<span class="item-name">${it.name}</span>`;
-            slot.title = `${it.name} (${it.desc})`;
-            slot.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                selectedItemIndex = i;
-                selectedItemSource = 'backpack';
-                ctxMoveBtn.style.display = 'block';
-                itemContextMenu.style.display = 'block';
-                itemContextMenu.style.left = e.clientX + 'px';
-                itemContextMenu.style.top = e.clientY + 'px';
-            });
-        }
-        backpackGrid.appendChild(slot);
-    }
-}
-
-ctxUseBtn.onclick = () => {
-    itemContextMenu.style.display = 'none';
-    if (selectedItemIndex !== null && selectedItemSource === 'backpack') {
-        useItem(selectedItemIndex);
-        selectedItemIndex = null;
-    } else {
-        msg("Використовувати можна тільки з рюкзака!");
-    }
-};
-
-ctxMoveBtn.onclick = () => {
-    itemContextMenu.style.display = 'none';
-    if (selectedItemIndex !== null) {
-        if (selectedItemSource === 'backpack') {
-            if (chestInventory.length >= MAX_CHEST_SIZE) {
-                msg("Сундук заповнений (максимум 30 предметів)!");
+        playBtn.addEventListener('click', () => {
+            initAudio();
+            if (hasSave()) {
+                const choice = confirm('Знайдено збережену гру. Продовжити? (ОК - так, Відміна - нова гра)');
+                if (choice) startGame(true);
+                else startGame(false);
             } else {
-                const item = inventory.splice(selectedItemIndex, 1)[0];
-                chestInventory.push(item);
-                msg("Переміщено в сундук");
+                startGame(false);
             }
-        } else if (selectedItemSource === 'chest') {
-            if (inventory.length >= MAX_INVENTORY_SIZE) {
-                msg("Рюкзак заповнений (максимум 20 предметів)!");
+        });
+
+        cheatBtn.addEventListener('click', () => {
+            cheatsEnabled = !cheatsEnabled;
+            cheatBtn.textContent = cheatsEnabled ? 'ЧИТИ: УВІМКНЕНО' : 'ЧИТИ: ВИМКНЕНО';
+            cheatBtn.className = 'menu-btn ' + (cheatsEnabled ? 'cheat-on' : 'cheat-off');
+            if (cheatsEnabled) {
+                player.hp = player.maxHp;
+                player.energy = player.maxEnergy;
+                updateStatsUI();
+                msg('★ Чити увімкнено!');
             } else {
-                const item = chestInventory.splice(selectedItemIndex, 1)[0];
-                inventory.push(item);
-                msg("Переміщено в рюкзак");
-            }
-        }
-        refreshContainerUI();
-        refreshBackpack();
-        selectedItemIndex = null;
-    }
-};
-
-ctxDropBtn.onclick = () => {
-    itemContextMenu.style.display = 'none';
-    if (selectedItemIndex !== null) {
-        if (selectedItemSource === 'backpack') {
-            dropItem(selectedItemIndex);
-        } else {
-            const it = chestInventory[selectedItemIndex];
-            itemsOnMap.push({
-                x: player.x + rnd(-20, 20),
-                y: player.y + rnd(-20, 20),
-                type: it.type,
-                name: it.name,
-                desc: it.desc,
-                regenType: it.regenType,
-                regenVal: it.regenVal
-            });
-            chestInventory.splice(selectedItemIndex, 1);
-            refreshContainerUI();
-            msg(`${it.name} викинуто з сундука`);
-        }
-        selectedItemIndex = null;
-    }
-};
-
-window.addEventListener('click', () => {
-    itemContextMenu.style.display = 'none';
-});
-
-function useItem(index) {
-    const it = inventory[index];
-    if (!it) return;
-
-    if (it.regenType === 'hp') {
-        player.hp = Math.min(player.maxHp, player.hp + it.regenVal);
-        msg(`${it.name}: відновлено ${it.regenVal} HP!`);
-    } else {
-        player.energy = Math.min(player.maxEnergy, player.energy + it.regenVal);
-        msg(`${it.name}: відновлено ${it.regenVal}% енергії!`);
-    }
-
-    inventory.splice(index, 1);
-    refreshBackpack();
-    updateStatsUI();
-    updateHomeUI();
-}
-
-function dropItem(index) {
-    const it = inventory[index];
-    if (!it) return;
-    itemsOnMap.push({
-        x: player.x + rnd(-20, 20),
-        y: player.y + rnd(-20, 20),
-        type: it.type,
-        name: it.name,
-        desc: it.desc,
-        regenType: it.regenType,
-        regenVal: it.regenVal
-    });
-    inventory.splice(index, 1);
-    refreshBackpack();
-    msg(`${it.name} викинуто`);
-}
-
-function die(reason) {
-    gameState = 'gameover';
-    player.hp = 0;
-    isGameActive = false;
-    updateStatsUI();
-    stopAmbient();
-    clearKeys();
-
-    if (gameTimeInterval) {
-        clearInterval(gameTimeInterval);
-        gameTimeInterval = null;
-    }
-
-    playDeath();
-    pickupHint.style.display = 'none';
-    statsEl.style.display = 'none';
-    controlsEl.style.display = 'none';
-    invUI.style.display = 'none';
-    containerUI.style.display = 'none';
-    cooldownHud.style.display = 'none';
-    itemContextMenu.style.display = 'none';
-    deathReasonEl.textContent = reason;
-    gameOverScreen.classList.remove('hidden');
-    saveRecords();
-}
-
-function resetGame() {
-    player.x = 0;
-    player.y = 0;
-    player.targetX = 0;
-    player.targetY = 0;
-    player.hp = player.maxHp;
-    player.energy = player.maxEnergy;
-    player.insideHouse = false;
-    stats.INT = 0;
-    stats.redKills = 0;
-    stats.blueKills = 0;
-    gameTime = 0;
-    inventory = [];
-    chestInventory = [];
-    tpPoints = [];
-    itemsOnMap.length = 0;
-    enemies.length = 0;
-    flashlightOn = false;
-    lighterActive = false;
-    screamCooldown = 0;
-    lighterCooldown = 0;
-    screamEffect = null;
-    lighterEffect = null;
-    clearKeys();
-
-    if (gameTimeInterval) {
-        clearInterval(gameTimeInterval);
-        gameTimeInterval = null;
-    }
-
-    for (let i = 0; i < 6; i++) spawnEnemy();
-    for (let i = 0; i < 35; i++) {
-        spawnItemAt(rnd(-1500, 1500), rnd(-1500, 1500));
-    }
-    updateHomeUI();
-    updateStatsUI();
-    updateCooldownUI();
-}
-
-function updateStatsUI() {
-    hpEl.textContent = `❤︎ Життя: ${Math.floor(player.hp)} / ${player.maxHp}`;
-    energyEl.textContent = `𐓏 Енергія: ${Math.floor(player.energy)}%`;
-    intEl.textContent = `⚑ Вбито: ${stats.INT}`;
-    gameTimeEl.textContent = `⏱ Час: ${formatGameTime(gameTime)}`;
-}
-
-function updateCooldownUI() {
-    if (player.insideHouse) {
-        screamCdEl.textContent = '✖';
-        screamCdEl.className = 'cd-value disabled';
-        lighterCdEl.textContent = '✖';
-        lighterCdEl.className = 'cd-value disabled';
-        return;
-    }
-
-    if (!flashlightOn) {
-        screamCdEl.textContent = '✖';
-        screamCdEl.className = 'cd-value disabled';
-    } else if (screamCooldown > 0) {
-        screamCdEl.textContent = Math.ceil(screamCooldown) + 'с';
-        screamCdEl.className = 'cd-value';
-    } else {
-        screamCdEl.textContent = '✔';
-        screamCdEl.className = 'cd-value ready';
-    }
-
-    if (flashlightOn) {
-        lighterCdEl.textContent = '✖';
-        lighterCdEl.className = 'cd-value disabled';
-    } else if (lighterCooldown > 0) {
-        lighterCdEl.textContent = Math.ceil(lighterCooldown) + 'с';
-        lighterCdEl.className = 'cd-value';
-    } else {
-        lighterCdEl.textContent = '✔';
-        lighterCdEl.className = 'cd-value ready';
-    }
-}
-
-function toggleFlashlight() {
-    flashlightOn = !flashlightOn;
-    playToggle();
-    updateCooldownUI();
-}
-
-function drawEnemyEntity(en, timeNow, index) {
-    ctx.save();
-    
-    const bobOffset = Math.sin((en.walkCycle || 0) * 0.4) * 4;
-    const renderY = en.y + bobOffset;
-
-    if (en.trail && en.trail.length > 0) {
-        en.trail.forEach((pos, idx) => {
-            const tAlpha = (1 - idx / en.trail.length) * 0.3;
-            ctx.fillStyle = en.type === 'red' ? `rgba(255, 80, 80, ${tAlpha})` : `rgba(80, 160, 255, ${tAlpha})`;
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, en.size * (1 - idx / en.trail.length) * 0.6, 0, Math.PI * 2);
-            ctx.fill();
-        });
-    }
-
-    if (en.type === 'red') {
-        const pulse = Math.sin(timeNow * 3 + index) * 4;
-        const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
-
-        const grad = ctx.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
-        grad.addColorStop(0, `rgba(255, 80, 80, ${alphaBase})`);
-        grad.addColorStop(0.5, `rgba(220, 40, 40, ${alphaBase * 0.4})`);
-        grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = en.state === 'scared' ? 'rgba(255, 120, 120, 0.4)' : 'rgba(235, 50, 50, 0.95)';
-        ctx.shadowColor = 'rgba(255, 50, 50, 0.8)';
-        ctx.shadowBlur = 18;
-        ctx.beginPath();
-        ctx.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-ctx.arc(en.x - 6, renderY - 3, 4, 0, Math.PI * 2);
-ctx.arc(en.x + 6, renderY - 3, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-} else {
-    const pulse = Math.sin(timeNow * 3 + index) * 4;
-    const alphaBase = en.state === 'scared' ? 0.35 : 0.85;
-
-    const grad = ctx.createRadialGradient(en.x, renderY, 2, en.x, renderY, en.size + pulse + 8);
-    grad.addColorStop(0, `rgba(60, 150, 255, ${alphaBase})`);
-    grad.addColorStop(0.5, `rgba(30, 90, 220, ${alphaBase * 0.4})`);
-    grad.addColorStop(1, 'rgba(0, 50, 200, 0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(en.x, renderY, en.size + pulse + 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = en.state === 'scared' ? 'rgba(100, 180, 255, 0.4)' : 'rgba(40, 130, 245, 0.95)';
-    ctx.shadowColor = 'rgba(40, 130, 245, 0.8)';
-    ctx.shadowBlur = 18;
-    ctx.beginPath();
-    ctx.arc(en.x, renderY, en.size * 0.85, 0, Math.PI * 2);
-    ctx.fill();
-
-ctx.shadowBlur = 0;
-ctx.beginPath();
-ctx.arc(en.x, renderY - 2, 15, 0.05 * Math.PI, 0.95 * Math.PI);  // ← renderY - 2 (піднято)
-ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-ctx.lineWidth = 3;
-ctx.stroke();
-}
-    ctx.restore();
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.save();
-    ctx.translate(canvas.width / 2 - player.x, canvas.height / 2 - player.y);
-
-    const timeNow = Date.now() * 0.005;
-
-    if (!player.insideHouse) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(player.x - canvas.width, player.y - canvas.height, canvas.width * 2, canvas.height * 2);
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        ctx.lineWidth = 1.5;
-        let startX = Math.floor((player.x - canvas.width) / 150) * 150;
-        let endX = startX + canvas.width * 2;
-        let startY = Math.floor((player.y - canvas.height) / 150) * 150;
-        let endY = startY + canvas.height * 2;
-        for (let x = startX; x <= endX; x += 150) {
-            ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x, endY); ctx.stroke();
-        }
-        for (let y = startY; y <= endY; y += 150) {
-            ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(endX, y); ctx.stroke();
-        }
-
-        itemsOnMap.forEach(it => {
-            const distToPlayer = Math.hypot(player.x - it.x, player.y - it.y);
-            if (flashlightOn && distToPlayer < 400) {
-                ctx.save();
-                ctx.fillStyle = it.regenType === 'hp' ? '#ff7777' : '#f2c94a';
-                ctx.shadowColor = it.regenType === 'hp' ? 'rgba(255,119,119,0.4)' : 'rgba(242,201,74,0.4)';
-                ctx.shadowBlur = 16;
-                ctx.fillRect(it.x - 8, it.y - 8, 16, 16);
-                ctx.restore();
+                msg('Чити вимкнено');
             }
         });
 
-        enemies.forEach((en, index) => {
-            if (!collidesWithHouse(en.x, en.y, en.size / 2)) {
-                drawEnemyEntity(en, timeNow, index);
+        settingsBtn.addEventListener('click', () => {
+            previousState = gameState;
+            menuScreen.classList.add('hidden');
+            settingsUI.classList.remove('hidden');
+        });
+
+        soundSettingsMenuBtn.addEventListener('click', () => {
+            settingsUI.classList.add('hidden');
+            soundSettingsUI.classList.remove('hidden');
+        });
+
+        closeSoundSettingsBtn.addEventListener('click', () => {
+            soundSettingsUI.classList.add('hidden');
+            settingsUI.classList.remove('hidden');
+        });
+
+        rulesBtn.addEventListener('click', () => {
+            settingsUI.classList.add('hidden');
+            rulesUI.classList.remove('hidden');
+        });
+
+        closeRulesBtn.addEventListener('click', () => {
+            rulesUI.classList.add('hidden');
+            settingsUI.classList.remove('hidden');
+        });
+
+        signatureEl.addEventListener('click', () => {
+            menuScreen.classList.add('hidden');
+            eulaUI.classList.remove('hidden');
+        });
+
+        closeEulaBtn.addEventListener('click', () => {
+            eulaUI.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+        });
+
+        pauseSettingsBtn.addEventListener('click', () => {
+            previousState = gameState;
+            pauseUI.classList.add('hidden');
+            settingsUI.classList.remove('hidden');
+        });
+
+        backBtn.addEventListener('click', () => {
+            settingsUI.classList.add('hidden');
+            if (previousState === 'pause') {
+                pauseUI.classList.remove('hidden');
+            } else {
+                menuScreen.classList.remove('hidden');
             }
         });
 
-        tpPoints.forEach((pt, index) => {
-            ctx.save();
-            ctx.fillStyle = '#27ae60';
-            ctx.shadowColor = 'rgba(39, 174, 96, 0.8)';
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.font = '10px monospace';
-            ctx.fillText(`TP${index+1}`, pt.x - 10, pt.y + 4);
-            ctx.restore();
+        resumeBtn.addEventListener('click', () => {
+            pauseUI.classList.add('hidden');
+            statsEl.style.display = 'block';
+            cooldownHud.style.display = 'flex';
+            if (compassEnabled) compassHud.style.display = 'flex';
+            if (minimapEnabled) minimapHud.style.display = 'flex';
+            isGameActive = true;
+            gameState = 'playing';
+            clearKeys();
+
+            if (gameTimeInterval) clearInterval(gameTimeInterval);
+            gameTimeInterval = setInterval(() => {
+                if (gameState === 'playing' && isGameActive) { gameTime++; updateStatsUI(); }
+            }, 1000);
         });
 
-        ctx.save();
-        ctx.fillStyle = house.color;
-        ctx.strokeStyle = '#5a3818';
-        ctx.lineWidth = 4;
-        ctx.fillRect(house.x, house.y, house.size, house.size);
-        ctx.strokeRect(house.x, house.y, house.size, house.size);
-
-        ctx.fillStyle = door.color;
-        ctx.shadowColor = 'rgba(127, 140, 141, 0.6)';
-        ctx.shadowBlur = 10;
-        ctx.fillRect(door.x, door.y, door.width, door.height);
-        ctx.restore();
-
-    } else {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(player.x - canvas.width * 2, player.y - canvas.height * 2, canvas.width * 4, canvas.height * 4);
-
-        ctx.save();
-        ctx.fillStyle = '#140e08';
-        ctx.fillRect(house.x, house.y, house.size, house.size);
-        ctx.strokeStyle = '#5a3818';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(house.x, house.y, house.size, house.size);
-
-        ctx.fillStyle = door.color;
-        ctx.fillRect(door.x, door.y, door.width, door.height);
-        ctx.restore();
-
-        ctx.save();
-        ctx.fillStyle = chest.color;
-        ctx.shadowColor = 'rgba(255, 215, 0, 0.4)';
-        ctx.shadowBlur = 8;
-        ctx.fillRect(chest.x - chest.size / 2, chest.y - chest.size / 2, chest.size, chest.size);
-        ctx.restore();
-
-        tpPoints.forEach((pt, index) => {
-            if (isInsideHouse(pt.x, pt.y)) {
-                ctx.save();
-                ctx.fillStyle = '#27ae60';
-                ctx.shadowColor = 'rgba(39, 174, 96, 0.8)';
-                ctx.shadowBlur = 15;
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.font = '10px monospace';
-                ctx.fillText(`TP${index+1}`, pt.x - 10, pt.y + 4);
-                ctx.restore();
-            }
+        saveExitBtn.addEventListener('click', () => {
+            if (gameState === 'playing') saveGame();
+            pauseUI.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+            gameState = 'menu';
+            isGameActive = false;
+            clearKeys();
+            if (gameTimeInterval) { clearInterval(gameTimeInterval); gameTimeInterval = null; }
+            msg('Гру збережено!');
         });
-    }
 
-    if (screamEffect) {
-        const se = screamEffect;
-        ctx.save();
-        const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, se.radius);
-        grad.addColorStop(0, `rgba(255,255,255,${se.alpha * 0.7})`);
-        grad.addColorStop(0.3, `rgba(220,220,220,${se.alpha * 0.35})`);
-        grad.addColorStop(1, `rgba(200,200,200,0)`);
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.arc(se.x, se.y, se.radius, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
+        respawnBtn.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            statsEl.style.display = 'block';
+            cooldownHud.style.display = 'flex';
+            if (compassEnabled) compassHud.style.display = 'flex';
+            if (minimapEnabled) minimapHud.style.display = 'flex';
+            deleteSave();
+            resetGame();
+            isGameActive = true;
+            gameState = 'playing';
 
-        se.radius += 5;
-        se.alpha *= 0.97;
-        if (se.alpha < 0.01 || se.radius > se.maxRadius) screamEffect = null;
-    }
+            if (gameTimeInterval) clearInterval(gameTimeInterval);
+            gameTimeInterval = setInterval(() => {
+                if (gameState === 'playing' && isGameActive) { gameTime++; updateStatsUI(); }
+            }, 1000);
+        });
 
-    if (lighterEffect) {
-        const le = lighterEffect;
-        ctx.save();
-        const length = le.length * le.alpha;
-        ctx.translate(le.x, le.y);
-        ctx.rotate(le.angle);
-        ctx.beginPath();
-        ctx.moveTo(length, 0); ctx.lineTo(-10, -12); ctx.lineTo(-10, 12); ctx.closePath();
-        ctx.fillStyle = `rgba(255, 210, 90, ${le.alpha * 0.7})`;
-        ctx.shadowColor = `rgba(255, 210, 90, ${le.alpha * 0.5})`;
-        ctx.shadowBlur = 35;
-        ctx.fill();
-        ctx.restore();
+        toMenuBtn.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+            gameState = 'menu';
+            isGameActive = false;
+            clearKeys();
+            if (gameTimeInterval) { clearInterval(gameTimeInterval); gameTimeInterval = null; }
+        });
 
-        le.alpha *= 0.98;
-        if (le.alpha < 0.02) lighterEffect = null;
-    }
+        interfaceVolRange.addEventListener('input', (e) => {
+            soundSettings.interface = parseFloat(e.target.value);
+            saveSoundSettings();
+        });
 
-    // Погойдування та легкий нахил квадрата гравця (зменшено різкість, додано м'якість для очей)
-    const playerBob = Math.sin(player.walkCycle) * 2.5;
-    const playerTilt = Math.sin(player.walkCycle * 0.5) * 0.04;
-    const renderPlayerY = player.y + playerBob;
+        musicVolRange.addEventListener('input', (e) => {
+            soundSettings.music = parseFloat(e.target.value);
+            bgMusic.volume = soundSettings.music;
+            saveSoundSettings();
+        });
 
-    ctx.save();
-    ctx.translate(player.x, renderPlayerY);
-    ctx.rotate(playerTilt);
-    ctx.fillStyle = '#e8e8e8';
-    ctx.shadowColor = 'rgba(232, 232, 232, 0.25)';
-    ctx.shadowBlur = 12;
-    ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
-    ctx.restore();
+        closeInvBtn.addEventListener('click', () => toggleInventory(false));
+        closeTpBtn.addEventListener('click', () => toggleTpUI(false));
+        closeContainerBtn.addEventListener('click', () => toggleContainer(false));
 
-    ctx.restore();
+        canvas.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
 
-    if (!player.insideHouse) {
-        if (flashlightOn) {
-            const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 70, canvas.width / 2, canvas.height / 2, 420);
-            grad.addColorStop(0, 'rgba(250, 250, 235, 0.45)');
-            grad.addColorStop(0.4, 'rgba(220, 220, 200, 0.15)');
-            grad.addColorStop(0.8, 'rgba(10, 10, 18, 0.85)');
-            grad.addColorStop(1, 'rgba(0, 0, 0, 1)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        } else {
-            const gradDark = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 30, canvas.width / 2, canvas.height / 2, 300);
-            gradDark.addColorStop(0, 'rgba(15, 15, 25, 0.1)');
-            gradDark.addColorStop(0.6, 'rgba(4, 4, 8, 0.92)');
-            gradDark.addColorStop(1, 'rgba(0, 0, 0, 1)');
-            ctx.fillStyle = gradDark;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-    } else {
-        const gradInside = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 20, canvas.width / 2, canvas.height / 2, 250);
-        gradInside.addColorStop(0, 'rgba(160, 140, 100, 0.22)');
-        gradInside.addColorStop(0.6, 'rgba(70, 60, 40, 0.35)');
-        gradInside.addColorStop(1, 'rgba(0, 0, 0, 1)');
-        ctx.fillStyle = gradInside;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (gameState === 'playing' && isGameActive) { scream(mouseX, mouseY); }
+        });
 
-    if (cheatsEnabled && gameState === 'playing') {
-        ctx.save();
-        ctx.fillStyle = 'rgba(76, 175, 80, 0.7)';
-        ctx.font = '14px monospace';
-        ctx.fillText('★ ЧИТИ УВІМКНЕНО', 20, 50);
-        ctx.restore();
-    }
-}
+        canvas.addEventListener('mousedown', (e) => {
+            e.button === 0 && gameState === 'playing' && isGameActive && useLighter(mouseX, mouseY);
+        });
 
-function gameTick(timestamp) {
-    if (timestamp) {
-        const delta = (timestamp - lastTimestamp) / 1000;
-        lastTimestamp = timestamp;
-
-        if (screamCooldown > 0) screamCooldown = Math.max(0, screamCooldown - delta);
-        if (lighterCooldown > 0) lighterCooldown = Math.max(0, lighterCooldown - delta);
-        updateCooldownUI();
-    }
-
-    if (gameState === 'menu' || gameState === 'settings') {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    } else if (gameState === 'playing') {
-        if (isGameActive) {
-            updatePlayerPosition();
-            spawnLoop();
-            updateEnemies();
-            checkInteractions();
-            checkTeleport();
-
-            if (lighterActive && Date.now() - lighterTimer > 5200) {
-                lighterActive = false;
-            }
-            updateStatsUI();
-        }
-        draw();
-    } else {
-        draw();
-    }
-    requestAnimationFrame(gameTick);
-}
-
-function startGame(loadFromSave = false) {
-    initAudio();
-    clearKeys();
-    
-    menuScreen.classList.add('hidden');
-    settingsUI.classList.add('hidden');
-    rulesUI.classList.add('hidden');
-    eulaUI.classList.add('hidden');
-    pauseUI.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
-    statsEl.style.display = 'block';
-    controlsEl.style.display = 'block';
-    cooldownHud.style.display = 'flex';
-
-    if (loadFromSave) {
-        if (!loadGame()) resetGame();
-    } else {
-        deleteSave();
-        resetGame();
-    }
-
-    isGameActive = true;
-    gameState = 'playing';
-    startAmbient();
-
-    if (gameTimeInterval) clearInterval(gameTimeInterval);
-    gameTimeInterval = setInterval(() => {
-        if (gameState === 'playing' && isGameActive) {
-            gameTime++;
-            updateStatsUI();
-        }
-    }, 1000);
-}
-
-playBtn.addEventListener('click', () => {
-    initAudio();
-    if (hasSave()) {
-        const choice = confirm('Знайдено збережену гру. Продовжити? (ОК - так, Відміна - нова гра)');
-        if (choice) startGame(true);
-        else startGame(false);
-    } else {
-        startGame(false);
-    }
-});
-
-cheatBtn.addEventListener('click', () => {
-    cheatsEnabled = !cheatsEnabled;
-    cheatBtn.textContent = cheatsEnabled ? 'ЧИТИ: УВІМКНЕНО' : 'ЧИТИ: ВИМКНЕНО';
-    cheatBtn.className = 'menu-btn ' + (cheatsEnabled ? 'cheat-on' : 'cheat-off');
-    if (cheatsEnabled) {
-        player.hp = player.maxHp;
-        player.energy = player.maxEnergy;
-        updateStatsUI();
-        msg('★ Чити увімкнено!');
-    } else {
-        msg('Чити вимкнено');
-    }
-});
-
-settingsBtn.addEventListener('click', () => {
-    previousState = gameState;
-    menuScreen.classList.add('hidden');
-    settingsUI.classList.remove('hidden');
-});
-
-rulesBtn.addEventListener('click', () => {
-    settingsUI.classList.add('hidden');
-    rulesUI.classList.remove('hidden');
-});
-
-closeRulesBtn.addEventListener('click', () => {
-    rulesUI.classList.add('hidden');
-    settingsUI.classList.remove('hidden');
-});
-
-signatureEl.addEventListener('click', () => {
-    menuScreen.classList.add('hidden');
-    eulaUI.classList.remove('hidden');
-});
-
-closeEulaBtn.addEventListener('click', () => {
-    eulaUI.classList.add('hidden');
-    menuScreen.classList.remove('hidden');
-});
-
-pauseSettingsBtn.addEventListener('click', () => {
-    previousState = gameState;
-    pauseUI.classList.add('hidden');
-    settingsUI.classList.remove('hidden');
-});
-
-backBtn.addEventListener('click', () => {
-    settingsUI.classList.add('hidden');
-    if (previousState === 'pause') {
-        pauseUI.classList.remove('hidden');
-    } else {
-        menuScreen.classList.remove('hidden');
-    }
-});
-
-resumeBtn.addEventListener('click', () => {
-    pauseUI.classList.add('hidden');
-    statsEl.style.display = 'block';
-    controlsEl.style.display = 'block';
-    cooldownHud.style.display = 'flex';
-    isGameActive = true;
-    gameState = 'playing';
-    startAmbient();
-    clearKeys();
-
-    if (gameTimeInterval) clearInterval(gameTimeInterval);
-    gameTimeInterval = setInterval(() => {
-        if (gameState === 'playing' && isGameActive) {
-            gameTime++;
-            updateStatsUI();
-        }
-    }, 1000);
-});
-
-saveExitBtn.addEventListener('click', () => {
-    if (gameState === 'playing') saveGame();
-    pauseUI.classList.add('hidden');
-    menuScreen.classList.remove('hidden');
-    gameState = 'menu';
-    isGameActive = false;
-    stopAmbient();
-    clearKeys();
-    if (gameTimeInterval) {
-        clearInterval(gameTimeInterval);
-        gameTimeInterval = null;
-    }
-    msg('Гру збережено!');
-});
-
-respawnBtn.addEventListener('click', () => {
-    gameOverScreen.classList.add('hidden');
-    statsEl.style.display = 'block';
-    controlsEl.style.display = 'block';
-    cooldownHud.style.display = 'flex';
-    deleteSave();
-    resetGame();
-    isGameActive = true;
-    gameState = 'playing';
-    startAmbient();
-
-    if (gameTimeInterval) clearInterval(gameTimeInterval);
-    gameTimeInterval = setInterval(() => {
-        if (gameState === 'playing' && isGameActive) {
-            gameTime++;
-            updateStatsUI();
-        }
-    }, 1000);
-});
-
-toMenuBtn.addEventListener('click', () => {
-    gameOverScreen.classList.add('hidden');
-    menuScreen.classList.remove('hidden');
-    gameState = 'menu';
-    isGameActive = false;
-    stopAmbient();
-    clearKeys();
-    if (gameTimeInterval) {
-        clearInterval(gameTimeInterval);
-        gameTimeInterval = null;
-    }
-});
-
-volRange.addEventListener('input', (e) => setAmbientVolume(parseFloat(e.target.value)));
-closeInvBtn.addEventListener('click', () => toggleInventory(false));
-closeContainerBtn.addEventListener('click', () => toggleContainer(false));
-
-canvas.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-});
-
-canvas.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    if (gameState === 'playing' && isGameActive) {
-        scream(mouseX, mouseY);
-    }
-});
-
-canvas.addEventListener('mousedown', (e) => {
-    e.button === 0 && gameState === 'playing' && isGameActive && useLighter(mouseX, mouseY);
-});
-
-gameTick();
+        setupButtonSounds();
+        gameTick();
     </script>
 </body>
 </html>
